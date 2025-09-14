@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    #checkout-form button:disabled {
+      background: gray;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <header>
+    <div class="logo">
+      <img src="assets/logo.png" alt="Princess Collection Logo">
+    </div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="shop.html">Shop</a>
+      <a href="#">About</a>
+      <a href="#">Contact</a>
+      <a href="cart.html">Cart 🛒</a>
+      <button id="logoutBtn" style="display:none">Logout</button>
+    </nav>
+  </header>
+
+  <!-- Checkout Section -->
+  <main>
+    <h2>Checkout</h2>
+    <div id="cart-summary"></div> <!-- 🛒 Order items + total -->
+
+    <form id="checkout-form">
+      <input type="text" id="name" placeholder="Full Name" required><br>
+      <input type="text" id="phone" placeholder="Phone Number" required><br>
+      <input type="text" id="whatsapp" placeholder="WhatsApp Number" required><br>
+      <input type="email" id="email" placeholder="Email" required><br>
+      <textarea id="address" placeholder="Shipping Address" required></textarea><br>
+      <button type="submit" id="payBtn">Pay with Razorpay</button>
+    </form>
+    <p id="message"></p>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2025 Princess Collection. All Rights Reserved.</p>
+  </footer>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/super-action`
+    const RAZORPAY_KEY_ID = "rzp_test_RH9xcaGD0ila5B"
+
+    const form = document.getElementById("checkout-form")
+    const message = document.getElementById("message")
+    const cartSummary = document.getElementById("cart-summary")
+    const payBtn = document.getElementById("payBtn")
+
+    // ✅ Check login
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      message.textContent = "⚠️ Please log in to checkout."
+      payBtn.disabled = true
+      throw new Error("No user logged in")
+    }
+
+    // ✅ Load cart
+    async function loadCartFromSupabase() {
+      let { data, error } = await supabase
+        .from("cart_items")
+        .select("*, products(*)")
+        .eq("user_id", user.id)
+
+      if (error) {
+        console.error(error)
+        return []
+      }
+
+      return data.map(item => ({
+        id: item.product_id,
+        name: item.products?.name,
+        price: item.products?.price,
+        image_url: item.products?.image_url,
+        quantity: item.quantity
+      }))
+    }
+
+    // ✅ Render Cart
+    async function renderCartSummary() {
+      const cart = await loadCartFromSupabase()
+      if (cart.length === 0) {
+        cartSummary.innerHTML = "<p>🛒 Your cart is empty!</p>"
+        payBtn.disabled = true
+        return []
+      }
+
+      let total = 0
+      cartSummary.innerHTML = `
+        <h3>Order Summary</h3>
+        <div class="order-summary">
+          ${cart.map(item => {
+            total += item.price * item.quantity
+            return `
+              <div class="summary-item">
+                <img src="${item.image_url}" alt="${item.name}">
+                <p>${item.name} (x${item.quantity}) - ₹${item.price * item.quantity}</p>
+              </div>
+            `
+          }).join("")}
+          <p class="grand-total"><strong>Total: ₹${total}</strong></p>
+        </div>
+      `
+
+      // ✅ Minimum order check
+      if (total < 500) {
+        const remaining = 500 - total
+        message.textContent = `⚠️ Minimum order is ₹500. Add ₹${remaining} more to continue.`
+        payBtn.disabled = true
+      } else {
+        message.textContent = ""
+        payBtn.disabled = false
+      }
+
+      return cart
+    }
+
+    let cart = await renderCartSummary()
+
+    // ✅ Checkout
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault()
+
+      if (cart.length === 0) {
+        message.textContent = "❌ Your cart is empty!"
+        return
+      }
+
+      let total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+      if (total < 500) {
+        const remaining = 500 - total
+        message.textContent = `⚠️ Minimum order is ₹500. Add ₹${remaining} more to continue.`
+        return
+      }
+
+      const name = document.getElementById("name").value
+      const phone = document.getElementById("phone").value
+      const whatsapp = document.getElementById("whatsapp").value
+      const email = document.getElementById("email").value
+      const address = document.getElementById("address").value
+
+      // 1️⃣ Create Razorpay Order
+      const res = await fetch(EDGE_FUNCTION_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ amount: total, currency: "INR" })
+      })
+
+      const order = await res.json()
+      if (!order.id) {
+        message.textContent = "❌ Failed to create Razorpay order."
+        return
+      }
+
+      // 2️⃣ Razorpay Checkout
+      const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Princess Collection",
+        description: "Order Payment",
+        order_id: order.id,
+        handler: async function (response) {
+          // 3️⃣ Save Order
+          let { error } = await supabase.from("orders").insert([{
+            user_id: user.id,
+            customer_name: name,
+            customer_phone: phone,
+            customer_whatsapp: whatsapp,
+            customer_email: email,
+            customer_address: address,
+            items: cart,
+            total: total,
+            razorpay_order_id: order.id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            status: "paid",
+            created_at: new Date().toISOString()
+          }])
+
+          if (error) {
+            console.error("Supabase Insert Error:", error)
+            message.textContent = "⚠️ Payment succeeded, but order save failed!"
+            return
+          }
+
+          // ✅ Clear cart
+          await supabase.from("cart_items").delete().eq("user_id", user.id)
+
+          form.reset()
+          message.innerHTML = `
+            ✅ Payment Successful!<br>
+            <strong>Order ID:</strong> ${order.id}<br>
+            <strong>Payment ID:</strong> ${response.razorpay_payment_id}
+          `
+        },
+        prefill: { name, email, contact: phone },
+        notes: { address },
+        theme: { color: "#FFD700" }
+      }
+
+      const rzp = new Razorpay(options)
+      rzp.open()
+    })
+  </script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us - Princess Collection</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .contact-container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #111;
+      border: 1px solid #FFD700;
+      border-radius: 10px;
+      color: #FFD700;
+    }
+    .contact-container h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #FFD700;
+    }
+    .contact-container p.intro {
+      text-align: center;
+      margin-bottom: 25px;
+      line-height: 1.6;
+      color: #ccc;
+    }
+    .contact-info {
+      text-align: center;
+      margin-bottom: 25px;
+      line-height: 1.8;
+    }
+    .contact-info p {
+      margin: 5px 0;
+    }
+    form input, form textarea, form button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #FFD700;
+      border-radius: 5px;
+      background: #000;
+      color: #FFD700;
+      font-size: 16px;
+    }
+    form textarea {
+      resize: none;
+      height: 120px;
+    }
+    form button {
+      background: #FFD700;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    form button:hover {
+      background: #e6c200;
+    }
+    #responseMsg {
+      margin-top: 15px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <header>
+    <div class="logo">
+      <a href="index.html"><img src="assets/logo.png" alt="Princess Collection Logo"></a>
+    </div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="shop.html">Shop</a>
+      <a href="about.html">About</a>
+      <a href="contact.html" class="active">Contact</a>
+      <a href="cart.html">Cart 🛒</a>
+    </nav>
+  </header>
+
+  <!-- Contact Section -->
+  <main>
+    <div class="contact-container">
+      <h1>📞 Contact Us – Princess Collection</h1>
+      <p class="intro">
+        We’re here to help! <br>
+        Any questions, suggestions, or concerns? Reach out to us and we’ll get back to you as soon as possible.
+      </p>
+
+      <div class="contact-info">
+        <p><strong>📧 Email:</strong> princesscollection7799@gmail.com</p>
+        <p><strong>📱 WhatsApp:</strong> <a href="https://wa.me/917708391596" target="_blank" style="color:#FFD700; text-decoration:underline;">+91 7708391596</a></p>
+        <p><strong>📦 Delivery Support:</strong> For order tracking and shipping-related queries, please mention your Order ID when contacting us.</p>
+        <p><strong>Stay Connected:</strong> Follow us on Instagram & whatsapp for the latest updates, offers, and new collections!</p>
+      </div>
+
+      <form id="contactForm">
+        <input type="text" id="name" placeholder="Your Name" required>
+        <input type="email" id="email" placeholder="Your Email" required>
+        <textarea id="message" placeholder="Your Message..." required></textarea>
+        <button type="submit">Send Message</button>
+      </form>
+      <p id="responseMsg"></p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2025 Princess Collection. All Rights Reserved.</p>
+  </footer>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    const form = document.getElementById("contactForm")
+    const responseMsg = document.getElementById("responseMsg")
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const name = document.getElementById("name").value
+      const email = document.getElementById("email").value
+      const message = document.getElementById("message").value
+
+      const { error } = await supabase.from("feedback").insert([
+        { name, email, feedback_text: message, created_at: new Date().toISOString() }
+      ])
+
+      if (error) {
+        console.error("Insert error:", error)
+        responseMsg.textContent = "⚠️ Failed to send message. Try again!"
+        responseMsg.style.color = "red"
+      } else {
+        responseMsg.textContent = "✅ Your message has been sent successfully!"
+        responseMsg.style.color = "lightgreen"
+        form.reset()
+      }
+    })
+  </script>
+</body>
+</html>

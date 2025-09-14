@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Princess Collection</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #000; color: #FFD700; display: flex; }
+    .sidebar { width: 220px; background: #111; border-right: 2px solid #FFD700; height: 100vh; position: fixed; left: 0; top: 0; padding: 20px 10px; }
+    .sidebar h2 { text-align: center; margin-bottom: 30px; color: #FFD700; }
+    .sidebar nav a { display: block; padding: 12px 15px; margin: 5px 0; border-radius: 5px; color: #FFD700; text-decoration: none; font-weight: bold; transition: 0.3s; }
+    .sidebar nav a:hover, .sidebar nav a.active { background: #FFD700; color: #000; }
+    .main { margin-left: 220px; flex: 1; padding: 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #FFD700; padding-bottom: 10px; }
+    header h1 { font-size: 22px; color: #FFD700; }
+    header button { background: #FFD700; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+    .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+    .card { background: #111; border: 1px solid #FFD700; border-radius: 10px; padding: 20px; text-align: center; }
+    .card h3 { margin-bottom: 10px; color: #FFD700; }
+    .card .number { font-size: 22px; font-weight: bold; color: #fff; }
+    .tables { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .table-container { background: #111; border: 1px solid #FFD700; border-radius: 10px; padding: 20px; }
+    .table-container h3 { margin-bottom: 15px; color: #FFD700; }
+    table { width: 100%; border-collapse: collapse; background: #000; color: #FFD700; }
+    table th, table td { padding: 10px; border-bottom: 1px solid #FFD700; text-align: left; }
+    table th { background: #111; }
+    table tr:nth-child(even) { background: #1a1a1a; }
+    footer { text-align: center; padding: 15px; border-top: 2px solid #FFD700; margin-top: 30px; background: #111; }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>Admin Panel</h2>
+    <nav>
+      <a href="admin-dashboard.html" class="active">🏠 Dashboard</a>
+      <a href="admin-orders.html">📦 Orders</a>
+      <a href="admin-products.html">🛍 Products</a>
+      <a href="admin-customers.html">👥 Customers</a>
+      <a href="admin-feedback.html">💬 Feedback</a>
+    </nav>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main">
+    <header>
+      <h1>Princess Collection — Admin</h1>
+      <button id="logoutBtn">Logout</button>
+    </header>
+
+    <!-- Overview Cards -->
+    <div class="dashboard">
+      <div class="card">
+        <h3>Total Orders</h3>
+        <div class="number" id="totalOrders">0 (Paid: 0 / Pending: 0)</div>
+      </div>
+      <div class="card">
+        <h3>Total Customers</h3>
+        <div class="number" id="totalCustomers">0</div>
+      </div>
+      <div class="card">
+        <h3>Total Sales</h3>
+        <div class="number" id="totalSales">₹0.00</div>
+      </div>
+      <div class="card">
+        <h3>New Messages</h3>
+        <div class="number" id="newMessages">0</div>
+      </div>
+    </div>
+
+    <!-- Orders & Low Stock -->
+    <div class="tables">
+      <div class="table-container">
+        <h3>Recent Orders</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="recentOrders">
+            <tr><td colspan="4">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-container">
+        <h3>Products (Low Stock &lt; 5)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Stock</th>
+            </tr>
+          </thead>
+          <tbody id="lowStockProducts">
+            <tr><td colspan="2">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Feedback -->
+    <div class="table-container">
+      <h3>Feedback / Messages</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody id="feedbackMessages">
+          <tr><td colspan="3">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer>
+      <p>© 2025 Princess Collection — Admin Dashboard</p>
+    </footer>
+  </div>
+
+  <!-- Script -->
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
+    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    const logoutBtn = document.getElementById("logoutBtn")
+    logoutBtn.addEventListener("click", async () => {
+      await supabase.auth.signOut()
+      window.location.href = "admin-login.html"
+    })
+
+    async function loadDashboard() {
+      // Orders
+      const { data: orders } = await supabase.from("orders").select("*")
+      let paid = orders?.filter(o => o.status === "paid").length || 0
+      let pending = orders?.filter(o => o.status !== "paid").length || 0
+      let totalSales = orders?.reduce((sum, o) => sum + (o.total || 0), 0) || 0
+      document.getElementById("totalOrders").textContent = `${orders?.length || 0} (Paid: ${paid} / Pending: ${pending})`
+      document.getElementById("totalSales").textContent = "₹" + totalSales.toFixed(2)
+
+      // Customers
+      const { data: customers } = await supabase.from("customers").select("*")
+      document.getElementById("totalCustomers").textContent = customers?.length || 0
+
+      // Feedback
+      const { data: feedback } = await supabase.from("feedback").select("*")
+      document.getElementById("newMessages").textContent = feedback?.length || 0
+
+      // Recent Orders Table
+      const ordersTable = document.getElementById("recentOrders")
+      ordersTable.innerHTML = orders?.length
+        ? orders.slice(-5).reverse().map(o => `
+          <tr>
+            <td>${o.id}</td>
+            <td>${o.customer_name || "-"}</td>
+            <td>₹${o.total}</td>
+            <td>${o.status}</td>
+          </tr>
+        `).join("")
+        : "<tr><td colspan='4'>No orders yet</td></tr>"
+
+      // Low stock products
+      const { data: products } = await supabase.from("products").select("*").lt("stock", 5)
+      const stockTable = document.getElementById("lowStockProducts")
+      stockTable.innerHTML = products?.length
+        ? products.map(p => `
+          <tr>
+            <td>${p.name}</td>
+            <td>${p.stock}</td>
+          </tr>
+        `).join("")
+        : "<tr><td colspan='2'>No low stock products</td></tr>"
+
+      // Feedback table
+      const feedbackTable = document.getElementById("feedbackMessages")
+      feedbackTable.innerHTML = feedback?.length
+        ? feedback.map(f => `
+          <tr>
+            <td>${f.name || "-"}</td>
+            <td>${f.email || "-"}</td>
+            <td>${f.feedback_text || f.message || "-"}</td>
+          </tr>
+        `).join("")
+        : "<tr><td colspan='3'>No messages yet</td></tr>"
+    }
+
+    // Realtime updates
+    supabase.channel("orders-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, payload => loadDashboard())
+      .subscribe()
+
+    supabase.channel("customers-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, payload => loadDashboard())
+      .subscribe()
+
+    supabase.channel("products-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, payload => loadDashboard())
+      .subscribe()
+
+    supabase.channel("feedback-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "feedback" }, payload => loadDashboard())
+      .subscribe()
+
+    // Initial load
+    loadDashboard()
+  </script>
+</body>
+</html>

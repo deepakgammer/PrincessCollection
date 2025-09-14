@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Princess Collection</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <header>
+    <div class="logo">
+      <img src="assets/logo.png" alt="Princess Collection Logo">
+    </div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="shop.html">Shop</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+      <a href="cart.html">Cart 🛒</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Login</h2>
+    <form id="login-form">
+      <input type="email" id="email" placeholder="Email" required><br>
+      <input type="password" id="password" placeholder="Password" required><br>
+      <button type="submit">Login</button>
+    </form>
+
+    <p style="margin-top: 15px;">Or</p>
+
+    <!-- Google Login Button -->
+    <button id="google-login" style="
+      background:#fff;
+      color:#000;
+      border:1px solid #ddd;
+      border-radius:6px;
+      padding:10px 20px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin:10px auto;
+    ">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+           alt="Google logo" width="20"> 
+      Login with Google
+    </button>
+
+    <p id="message"></p>
+    <p>Don't have an account? <a href="register.html">Register</a></p>
+  </main>
+
+  <footer>
+    <p>© 2025 Princess Collection. All Rights Reserved.</p>
+  </footer>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
+
+    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    // Email/password login
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const email = document.getElementById("email").value
+      const password = document.getElementById("password").value
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+
+      if (error) {
+        document.getElementById("message").textContent = "❌ " + error.message
+      } else {
+        document.getElementById("message").textContent = "✅ Login successful!"
+        localStorage.setItem("user", JSON.stringify(data.session))
+        window.location.href = "index.html"
+      }
+    })
+
+    // Google login
+    document.getElementById("google-login").addEventListener("click", async () => {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: "http://127.0.0.1:5500/index.html"  // 👈 after login redirect here
+        }
+      })
+
+      if (error) {
+        document.getElementById("message").textContent = "❌ " + error.message
+      }
+    })
+  </script>
+</body>
+</html>

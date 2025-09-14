@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .product-detail-container {
+      max-width: 1000px;
+      margin: 40px auto;
+      display: flex;
+      gap: 40px;
+      background: #111;
+      border: 1px solid #FFD700;
+      border-radius: 10px;
+      padding: 20px;
+      align-items: flex-start; /* image + details start from top */
+    }
+    .product-image {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+    }
+    .product-image img {
+      max-width: 100%;
+      width: 350px;
+      border-radius: 10px;
+      border: 2px solid #FFD700;
+    }
+    .product-info {
+      flex: 2;
+      color: #FFD700;
+    }
+    .product-info h2 {
+      margin-bottom: 10px;
+    }
+    .product-info p {
+      margin: 6px 0;
+    }
+    .product-info button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #FFD700;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .product-info button:hover {
+      background: white;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="logo">
+      <a href="index.html"><img src="assets/logo.png" alt="Princess Collection Logo"></a>
+    </div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="shop.html">Shop</a>
+      <a href="cart.html">Cart 🛒</a>
+      <button id="logoutBtn" style="display:none">Logout</button>
+    </nav>
+  </header>
+
+  <!-- Product Detail -->
+  <main>
+    <div id="product-detail" class="product-detail-container">Loading...</div>
+    <p id="message"></p>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2025 Princess Collection. All Rights Reserved.</p>
+  </footer>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    const params = new URLSearchParams(window.location.search)
+    const productId = params.get("id")
+    const messageEl = document.getElementById("message")
+
+    let { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      window.location.href = "login.html"
+    } else {
+      document.getElementById("logoutBtn").style.display = "inline-block"
+      document.getElementById("logoutBtn").addEventListener("click", async () => {
+        await supabase.auth.signOut()
+        window.location.href = "login.html"
+      })
+    }
+
+    // ✅ Add to cart
+    window.addToCart = async function (product) {
+      let { data: existing, error: fetchError } = await supabase
+        .from("cart_items")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("product_id", product.id)
+        .single()
+
+      if (existing) {
+        if (existing.quantity >= product.stock) {
+          messageEl.textContent = "⚠️ Stock limit reached!"
+          return
+        }
+        await supabase.from("cart_items").update({ quantity: existing.quantity + 1 }).eq("id", existing.id)
+        messageEl.textContent = `✅ ${product.name} quantity updated in cart!`
+      } else {
+        await supabase.from("cart_items").insert([{ user_id: user.id, product_id: product.id, quantity: 1 }])
+        messageEl.textContent = `✅ ${product.name} added to cart!`
+      }
+    }
+
+    // ✅ Load product
+    async function loadProduct() {
+      if (!productId) {
+        document.getElementById("product-detail").innerHTML = "<p>No product selected.</p>"
+        return
+      }
+
+      let { data, error } = await supabase.from("products").select("*").eq("id", productId).single()
+      if (error) {
+        console.error(error)
+        document.getElementById("product-detail").innerHTML = "<p>Error loading product.</p>"
+        return
+      }
+
+      document.getElementById("product-detail").innerHTML = `
+        <div class="product-image">
+          <img src="${data.image_url}" alt="${data.name}">
+        </div>
+        <div class="product-info">
+          <h2>${data.name}</h2>
+          <p>${data.description || "No description available."}</p>
+          <p><strong>Weight:</strong> ${data.weight || "-"} kg</p>
+          <p><strong>Size:</strong> ${data.size || "-"}</p>
+          <p><strong>Stock:</strong> ${data.stock > 0 ? data.stock : "Out of Stock"}</p>
+          <p><strong>Price:</strong> ₹${data.price}</p>
+          ${data.discount_price ? `<p>Discount: ₹${data.discount_price}</p>` : ""}
+          ${data.stock > 0 
+            ? `<button onclick='addToCart(${JSON.stringify(data)})'>Add to Cart</button>` 
+            : `<p style="color:red;">Out of Stock</p>`}
+        </div>
+      `
+    }
+
+    loadProduct()
+  </script>
+</body>
+</html>

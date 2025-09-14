@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Login — Princess Collection</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background:#000; color:#FFD700; font-family:Segoe UI, sans-serif; }
+    .wrap { max-width:420px; margin:80px auto; padding:22px; background:#111; border:1px solid #FFD700; border-radius:8px; }
+    input { width:100%; padding:10px; margin:8px 0; border:1px solid #FFD700; background:#000; color:#FFD700; border-radius:6px; }
+    button { width:100%; padding:10px; background:#FFD700; border:none; cursor:pointer; font-weight:bold; border-radius:6px; }
+    .msg { margin-top:10px; color:#f88; }
+    h2 { text-align:center; margin:0 0 12px; color:#FFD700; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>Admin Login</h2>
+    <input id="email" type="email" placeholder="Admin email" />
+    <input id="password" type="password" placeholder="Password" />
+    <button id="loginBtn">Sign in</button>
+    <p class="msg" id="msg"></p>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    const emailEl = document.getElementById('email')
+    const passEl = document.getElementById('password')
+    const btn = document.getElementById('loginBtn')
+    const msg = document.getElementById('msg')
+
+    btn.addEventListener('click', async () => {
+      msg.textContent = ''
+      const email = emailEl.value.trim()
+      const pass = passEl.value.trim()
+      if (!email || !pass) { msg.textContent = 'Please enter email & password.'; return }
+
+      try {
+        // call RPC auth_admin(email, pass)
+        const { data, error } = await supabase.rpc('auth_admin', { in_email: email, in_pass: pass })
+
+        if (error) {
+          console.error('RPC error', error)
+          msg.textContent = 'Login failed (server error).'
+          return
+        }
+
+        if (!data || data.length === 0) {
+          msg.textContent = 'Invalid credentials.'
+          return
+        }
+
+        // success - store admin session locally (simple)
+        const admin = { id: data[0].admin_id, email: data[0].admin_email }
+        localStorage.setItem('pc_admin', JSON.stringify(admin))
+
+        // redirect to dashboard
+        window.location.href = 'admin-dashboard.html'
+      } catch (e) {
+        console.error(e)
+        msg.textContent = 'Login failed.'
+      }
+    })
+  </script>
+</body>
+</html>

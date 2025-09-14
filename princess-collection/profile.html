@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account - Princess Collection</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .order-card {
+      background: #111;
+      border: 1px solid #FFD700;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .order-card:hover {
+      background: #222;
+    }
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .order-status {
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .paid { background: #28a745; color: white; }
+    .pending { background: #ffc107; color: black; }
+    .cancelled { background: #dc3545; color: white; }
+
+    .order-details {
+      margin-top: 10px;
+      display: none;
+      border-top: 1px solid #FFD700;
+      padding-top: 10px;
+    }
+    .order-details ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .order-details li {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <header>
+    <div class="logo">
+      <a href="index.html"><img src="assets/logo.png" alt="Princess Collection Logo"></a>
+    </div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="shop.html">Shop</a>
+      <a href="cart.html">Cart 🛒</a>
+      <a href="#" id="logoutBtn">Logout 🚪</a>
+    </nav>
+  </header>
+
+  <!-- Profile Section -->
+  <main class="profile-container">
+    <h2>My Account</h2>
+    <div id="user-info">
+      <p><strong>Email:</strong> <span id="user-email"></span></p>
+      <p><strong>Name:</strong> <span id="user-name">-</span></p>
+    </div>
+
+    <h3>My Orders</h3>
+    <div id="orders-list">
+      <p>Loading your orders...</p>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Princess Collection. All Rights Reserved.</p>
+  </footer>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    const logoutBtn = document.getElementById("logoutBtn")
+    const emailEl = document.getElementById("user-email")
+    const nameEl = document.getElementById("user-name")
+    const ordersList = document.getElementById("orders-list")
+
+    // ✅ Get logged-in user
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      window.location.href = "login.html"
+    } else {
+      emailEl.textContent = user.email
+      nameEl.textContent = user.user_metadata?.full_name || user.email.split("@")[0]
+
+      // ✅ Fetch orders by user_id
+      let { data: orders, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error(error)
+        ordersList.innerHTML = "<p>⚠️ Failed to load orders.</p>"
+      } else if (!orders || orders.length === 0) {
+        ordersList.innerHTML = "<p>No orders found.</p>"
+      } else {
+        ordersList.innerHTML = orders.map(order => {
+          let itemsHtml = ""
+          try {
+            const items = Array.isArray(order.items) ? order.items : JSON.parse(order.items || "[]")
+            itemsHtml = `<ul>` + items.map(i => `
+              <li>🛍️ ${i.name} — ₹${i.price} × ${i.quantity} = ₹${i.price * i.quantity}</li>
+            `).join("") + `</ul>`
+          } catch (e) {
+            itemsHtml = "<p>⚠️ Could not load items.</p>"
+          }
+
+          // Status badge
+          let statusClass = "pending"
+          if (order.status === "paid") statusClass = "paid"
+          else if (order.status === "cancelled") statusClass = "cancelled"
+
+          return `
+            <div class="order-card" onclick="this.querySelector('.order-details').classList.toggle('open'); 
+                                               this.querySelector('.order-details').style.display = 
+                                               this.querySelector('.order-details').style.display === 'block' ? 'none' : 'block';">
+              <div class="order-header">
+                <p><strong>Order #${order.id}</strong> — <small>${new Date(order.created_at).toLocaleDateString()}</small></p>
+                <span class="order-status ${statusClass}">${order.status}</span>
+              </div>
+              <div class="order-details">
+                <h4>Items</h4>
+                ${itemsHtml}
+                <p><strong>Total:</strong> ₹${order.total}</p>
+              </div>
+            </div>
+          `
+        }).join("")
+      }
+    }
+
+    // ✅ Logout
+    logoutBtn.addEventListener("click", async () => {
+      await supabase.auth.signOut()
+      localStorage.removeItem("user")
+      window.location.href = "login.html"
+    })
+  </script>
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Orders | Princess Collection</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      display: flex;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+    }
+    .sidebar {
+      width: 220px;
+      background: #000;
+      border-right: 2px solid #FFD700;
+      padding: 20px;
+      height: 100vh;
+    }
+    .sidebar h2 {
+      color: #FFD700;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .sidebar a {
+      display: block;
+      color: #FFD700;
+      text-decoration: none;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 5px;
+    }
+    .sidebar a:hover {
+      background: #FFD700;
+      color: #000;
+    }
+    .main {
+      flex: 1;
+      padding: 20px;
+    }
+    h1 {
+      color: #FFD700;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #222;
+      color: #fff;
+    }
+    table th, table td {
+      padding: 10px;
+      border: 1px solid #444;
+      text-align: left;
+    }
+    table th {
+      background: #333;
+    }
+    .btn-view {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .form-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #222;
+      padding: 20px;
+      border: 2px solid #FFD700;
+      border-radius: 10px;
+      z-index: 1000;
+      width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .form-popup h2 {
+      margin-bottom: 15px;
+      color: #FFD700;
+    }
+    select {
+      padding: 5px;
+      background: #000;
+      color: #FFD700;
+      border: 1px solid #FFD700;
+      border-radius: 5px;
+    }
+    .close-btn {
+      background: #dc3545;
+      color: #fff;
+      padding: 6px 12px;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 15px;
+    }
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: #111;
+    }
+    .items-table th, .items-table td {
+      border: 1px solid #444;
+      padding: 8px;
+      text-align: left;
+    }
+    .items-table th {
+      background: #333;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <a href="admin-dashboard.html">Dashboard</a>
+    <a href="admin-orders.html" class="active">Orders</a>
+    <a href="admin-products.html">Products</a>
+    <a href="admin-customers.html">Customers</a>
+    <a href="admin-feedback.html">Feedback</a>
+    <a href="login.html" id="logoutBtn">Logout</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+    <h1>Manage Orders</h1>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Customer</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="ordersTable"></tbody>
+    </table>
+  </div>
+
+  <!-- Order Details Popup -->
+  <div class="form-popup" id="orderDetails">
+    <h2>Order Details</h2>
+    <div id="detailsContent"></div>
+    <button class="close-btn" onclick="closeDetails()">❌ Close</button>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    const table = document.getElementById("ordersTable")
+    const detailsPopup = document.getElementById("orderDetails")
+    const detailsContent = document.getElementById("detailsContent")
+
+    async function loadOrders() {
+      let { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error(error)
+        return
+      }
+
+      table.innerHTML = data.map(o => `
+        <tr>
+          <td>${o.id}</td>
+          <td>${o.customer_name}</td>
+          <td>₹${o.total}</td>
+          <td>
+            <select onchange="updateStatus(${o.id}, this.value)">
+              <option ${o.status === "pending" ? "selected" : ""}>pending</option>
+              <option ${o.status === "processing" ? "selected" : ""}>processing</option>
+              <option ${o.status === "shipped" ? "selected" : ""}>shipped</option>
+              <option ${o.status === "delivered" ? "selected" : ""}>delivered</option>
+              <option ${o.status === "cancelled" ? "selected" : ""}>cancelled</option>
+            </select>
+          </td>
+          <td>${new Date(o.created_at).toLocaleDateString()}</td>
+          <td><button class="btn-view" onclick="viewOrder(${o.id})">View</button></td>
+        </tr>
+      `).join("")
+    }
+
+    // 📦 View order details
+    window.viewOrder = async function(id) {
+      let { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", id)
+        .single()
+
+      if (error) {
+        console.error(error)
+        return
+      }
+
+      // Format items nicely
+      let itemsHtml = "<table class='items-table'><tr><th>Product</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>"
+      if (Array.isArray(data.items)) {
+        data.items.forEach(i => {
+          const subtotal = i.price * i.quantity
+          itemsHtml += `<tr>
+            <td>${i.name || "Product"}</td>
+            <td>${i.quantity}</td>
+            <td>₹${i.price}</td>
+            <td>₹${subtotal}</td>
+          </tr>`
+        })
+      }
+      itemsHtml += "</table>"
+
+      detailsContent.innerHTML = `
+        <p><strong>Customer:</strong> ${data.customer_name}</p>
+        <p><strong>Email:</strong> ${data.customer_email}</p>
+        <p><strong>Phone:</strong> ${data.customer_phone}</p>
+        <p><strong>Address:</strong> ${data.customer_address}</p>
+        <p><strong>Total:</strong> ₹${data.total}</p>
+        <p><strong>Status:</strong> ${data.status}</p>
+        <p><strong>Payment ID:</strong> ${data.razorpay_payment_id}</p>
+        <h3>Items:</h3>
+        ${itemsHtml}
+      `
+      detailsPopup.style.display = "block"
+    }
+
+    // 🚪 Close details
+    window.closeDetails = function() {
+      detailsPopup.style.display = "none"
+    }
+
+    // 🔄 Update Status
+    window.updateStatus = async function(id, status) {
+      let { error } = await supabase
+        .from("orders")
+        .update({ status })
+        .eq("id", id)
+
+      if (error) {
+        console.error("Status update failed:", error)
+        alert("❌ Failed to update status")
+      } else {
+        alert("✅ Status updated")
+        loadOrders()
+      }
+    }
+
+    loadOrders()
+  </script>
+</body>
+</html>

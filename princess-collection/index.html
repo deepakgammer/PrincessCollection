@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Princess Collection</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <header>
+    <div class="logo">
+      <img src="assets/logo.png" alt="Princess Collection Logo">
+    </div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="shop.html">Shop</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+      <a href="cart.html">Cart 🛒</a>
+      <!-- Dynamic buttons -->
+      <a href="login.html" id="loginBtn">Login</a>
+      <a href="profile.html" id="profileBtn" style="display:none;">My Account</a>
+      <a href="#" id="logoutBtn" style="display:none;">Logout 🚪</a>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>Welcome to Princess Collection</h1>
+    <p>Elegant Bangles, Earrings & Accessories ✨</p>
+    <input type="text" id="searchInput" placeholder="Search products...">
+  </section>
+
+  <!-- Products -->
+  <section class="products">
+    <h2>Our Products</h2>
+    <div id="product-list" class="grid"></div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2025 Princess Collection. All Rights Reserved.</p>
+  </footer>
+
+  <!-- Auth Control -->
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    const loginBtn = document.getElementById("loginBtn")
+    const profileBtn = document.getElementById("profileBtn")
+    const logoutBtn = document.getElementById("logoutBtn")
+
+    if (user) {
+      loginBtn.style.display = "none"
+      profileBtn.style.display = "inline"
+      logoutBtn.style.display = "inline"
+    } else {
+      loginBtn.style.display = "inline"
+      profileBtn.style.display = "none"
+      logoutBtn.style.display = "none"
+    }
+
+    logoutBtn?.addEventListener("click", async () => {
+      await supabase.auth.signOut()
+      window.location.href = "login.html"
+    })
+  </script>
+
+  <!-- Main app logic -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

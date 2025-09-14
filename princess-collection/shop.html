@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop - Princess Collection</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <header>
+    <div class="logo">
+      <a href="index.html"><img src="assets/logo.png" alt="Princess Collection Logo"></a>
+    </div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="shop.html" class="active">Shop</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+      <a href="cart.html">Cart 🛒</a>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>Our Products</h1>
+    <p>Browse categories and find your favorite collection ✨</p>
+    <input type="text" id="searchInput" placeholder="Search products...">
+  </section>
+
+  <!-- Filters -->
+  <section class="filters">
+    <label for="categoryFilter">Category:</label>
+    <select id="categoryFilter">
+      <option value="">All</option>
+      <option value="Bangles">Bangles</option>
+      <option value="Earrings">Earrings</option>
+      <option value="Clips">Clips</option>
+      <option value="Bracelets">Bracelets</option>
+      <option value="ChainSets">ChainSets</option>
+    </select>
+
+    <label for="priceSort">Sort by Price:</label>
+    <select id="priceSort">
+      <option value="">Default</option>
+      <option value="asc">Low → High</option>
+      <option value="desc">High → Low</option>
+    </select>
+  </section>
+
+  <!-- Products -->
+  <section class="products">
+    <div id="product-list" class="grid">
+      <!-- Products will load here -->
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2025 Princess Collection. All Rights Reserved.</p>
+  </footer>
+
+  <!-- JS -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
