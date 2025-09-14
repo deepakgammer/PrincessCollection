@@ -97,7 +97,9 @@
       margin-bottom: 15px;
       color: #FFD700;
     }
-    .form-popup input, .form-popup textarea, .form-popup select {
+    .form-popup input, 
+    .form-popup textarea,
+    .form-popup select {
       width: 100%;
       margin: 8px 0;
       padding: 10px;
@@ -158,12 +160,17 @@
     <input type="number" id="stock" placeholder="Stock" required>
     <input type="number" id="weight" placeholder="Weight (kg)" required>
     <input type="text" id="size" placeholder="Size (e.g. 2 inch)">
-    
-    <!-- ✅ Dynamic Category Dropdown -->
+
+    <!-- ✅ Category dropdown -->
     <select id="category" required>
       <option value="">-- Select Category --</option>
+      <option value="Bangles">Bangles</option>
+      <option value="Earrings">Earrings</option>
+      <option value="Clips">Clips</option>
+      <option value="Bracelets">Bracelets</option>
+      <option value="ChainSets">ChainSets</option>
     </select>
-    
+
     <input type="text" id="image_url" placeholder="Image URL">
     <button onclick="saveProduct()">💾 Save</button>
     <button onclick="closeForm()">❌ Cancel</button>
@@ -179,22 +186,7 @@
     const formPopup = document.getElementById("productForm")
     const formTitle = document.getElementById("formTitle")
     const productIdEl = document.getElementById("productId")
-    const categorySelect = document.getElementById("category")
 
-    // ✅ Load Categories
-    async function loadCategories() {
-      let { data, error } = await supabase.from("categories").select("*").order("name")
-      if (error) {
-        console.error("Category load error:", error)
-        return
-      }
-      categorySelect.innerHTML = `<option value="">-- Select Category --</option>`
-      data.forEach(c => {
-        categorySelect.innerHTML += `<option value="${c.name}">${c.name}</option>`
-      })
-    }
-
-    // ✅ Load Products
     async function loadProducts() {
       let { data, error } = await supabase
         .from("products")
@@ -218,7 +210,10 @@
           <td>${p.size || "-"}</td>
           <td>${p.is_active === false ? "❌ Inactive" : "✅ Active"}</td>
           <td>
-            <button class="btn-edit" onclick="editProduct(${p.id}, '${p.name}', \`${p.description || ""}\`, ${p.price}, ${p.stock}, ${p.weight}, '${p.size || ""}', '${p.category || ""}', '${p.image_url || ""}')">Edit</button>
+            <button class="btn-edit" 
+              onclick="editProduct(${p.id}, '${p.name}', \`${p.description || ""}\`, ${p.price}, ${p.stock}, ${p.weight}, '${p.size || ""}', '${p.category || ""}', '${p.image_url || ""}')">
+              Edit
+            </button>
             <button class="btn-delete" onclick="deleteProduct(${p.id})">Delete</button>
           </td>
         </tr>
@@ -235,8 +230,8 @@
       document.getElementById("stock").value = ""
       document.getElementById("weight").value = ""
       document.getElementById("size").value = ""
+      document.getElementById("category").value = ""
       document.getElementById("image_url").value = ""
-      categorySelect.value = ""
       formPopup.style.display = "block"
     }
     window.closeForm = function() {
@@ -253,7 +248,7 @@
       document.getElementById("stock").value = stock
       document.getElementById("weight").value = weight
       document.getElementById("size").value = size
-      categorySelect.value = category || ""
+      document.getElementById("category").value = category
       document.getElementById("image_url").value = image_url
       formPopup.style.display = "block"
     }
@@ -267,19 +262,23 @@
       const stock = parseInt(document.getElementById("stock").value)
       const weight = parseFloat(document.getElementById("weight").value)
       const size = document.getElementById("size").value
-      const category = categorySelect.value
+      const category = document.getElementById("category").value
       const image_url = document.getElementById("image_url").value
 
       if (!name || !price || !stock || !weight || !category) {
-        alert("⚠️ Please fill required fields")
+        alert("⚠️ Please fill required fields (including Category)")
         return
       }
 
       if (id) {
-        await supabase.from("products").update({ name, description, price, stock, weight, size, category, image_url }).eq("id", id)
+        await supabase.from("products").update({ 
+          name, description, price, stock, weight, size, category, image_url 
+        }).eq("id", id)
         alert("✅ Product updated!")
       } else {
-        await supabase.from("products").insert([{ name, description, price, stock, weight, size, category, image_url, is_active: true }])
+        await supabase.from("products").insert([{ 
+          name, description, price, stock, weight, size, category, image_url, is_active: true 
+        }])
         alert("✅ Product added!")
       }
 
@@ -314,7 +313,6 @@
     }
 
     // Initial Load
-    loadCategories()
     loadProducts()
   </script>
 </body>
