@@ -5,12 +5,38 @@ const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// ✅ Detect environment (localhost vs production)
+const isLocalhost = window.location.hostname.includes("127.0.0.1") || window.location.hostname.includes("localhost")
+const redirectURL = isLocalhost 
+  ? "http://127.0.0.1:5500/index.html" 
+  : "https://princesscollection.it.com/"
+
 // ✅ Check Login
 let { data: { user } } = await supabase.auth.getUser()
 if (!user) {
-  window.location.href = "login.html"
+  // If not logged in, send them to login page
+  if (!window.location.pathname.includes("login.html")) {
+    window.location.href = "login.html"
+  }
 }
 const currentUser = user
+
+// ✅ Google Login Trigger (used in login.html)
+window.googleLogin = async function () {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: redirectURL
+    }
+  })
+  if (error) console.error("Google Login Error:", error.message)
+}
+
+// ✅ Logout
+window.logout = async function () {
+  await supabase.auth.signOut()
+  window.location.href = "login.html"
+}
 
 // ✅ Load Products Function
 async function loadProducts(searchQuery = "", category = "", sortOrder = "") {
