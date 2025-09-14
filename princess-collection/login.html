@@ -65,6 +65,12 @@
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+    // Detect environment (localhost or production)
+    const isLocalhost = window.location.hostname.includes("127.0.0.1") || window.location.hostname.includes("localhost")
+    const redirectURL = isLocalhost 
+      ? "http://127.0.0.1:5500/index.html"
+      : "https://princesscollection.it.com/"
+
     // Email/password login
     document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault()
@@ -87,10 +93,10 @@
 
     // Google login
     document.getElementById("google-login").addEventListener("click", async () => {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: "http://127.0.0.1:5500/index.html"  // 👈 after login redirect here
+          redirectTo: redirectURL
         }
       })
 
