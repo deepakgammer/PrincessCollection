@@ -1,110 +1,289 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-
-// Supabase credentials
-const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-// ✅ Detect environment (localhost vs production)
-const isLocalhost = window.location.hostname.includes("127.0.0.1") || window.location.hostname.includes("localhost")
-const redirectURL = isLocalhost 
-  ? "http://127.0.0.1:5500/index.html" 
-  : "https://princesscollection.it.com/"
-
-// ✅ Check Login
-let { data: { user } } = await supabase.auth.getUser()
-if (!user) {
-  // If not logged in, send them to login page
-  if (!window.location.pathname.includes("login.html")) {
-    window.location.href = "login.html"
-  }
-}
-const currentUser = user
-
-// ✅ Google Login Trigger (used in login.html)
-window.googleLogin = async function () {
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: redirectURL
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Cart - Princess Collection</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Navbar */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #000;
+      color: #FFD700;
+      position: relative;
+      z-index: 1000;
     }
-  })
-  if (error) console.error("Google Login Error:", error.message)
-}
+    header .logo img {
+      height: 50px;
+    }
+    nav {
+      display: flex;
+      gap: 15px;
+    }
+    nav a, nav button {
+      color: #FFD700;
+      text-decoration: none;
+      font-weight: bold;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    nav a:hover,
+    nav a.active {
+      text-decoration: underline;
+    }
 
-// ✅ Logout
-window.logout = async function () {
-  await supabase.auth.signOut()
-  window.location.href = "login.html"
-}
+    /* Hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
+    }
+    .hamburger span {
+      height: 3px;
+      width: 25px;
+      background: #FFD700;
+      margin: 4px 0;
+      border-radius: 2px;
+    }
 
-// ✅ Load Products Function
-async function loadProducts(searchQuery = "", category = "", sortOrder = "") {
-  let query = supabase.from('products').select('*')
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav {
+        display: none;
+        flex-direction: column;
+        background: #111;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        width: 200px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+        padding: 10px;
+      }
+      nav a, nav button {
+        padding: 10px;
+        border-bottom: 1px solid #333;
+        text-align: left;
+      }
+      nav a:last-child, nav button:last-child {
+        border-bottom: none;
+      }
+      .hamburger {
+        display: flex;
+      }
+      nav.active {
+        display: flex;
+      }
+    }
 
-  if (searchQuery) query = query.ilike('name', `%${searchQuery}%`)
-  if (category) query = query.eq('category', category)
-  if (sortOrder === "asc") query = query.order('price', { ascending: true })
-  if (sortOrder === "desc") query = query.order('price', { ascending: false })
+    /* Cart styles */
+    main {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #111;
+      border: 1px solid #FFD700;
+      border-radius: 10px;
+      color: #FFD700;
+    }
+    .cart-item {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #333;
+      padding: 10px 0;
+    }
+    .cart-item img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 5px;
+      margin-right: 15px;
+    }
+    .cart-item button {
+      margin: 5px;
+      padding: 5px 10px;
+      background: #FFD700;
+      border: none;
+      color: #000;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .cart-item button:disabled {
+      background: #555;
+      color: #999;
+      cursor: not-allowed;
+    }
+    #checkout-btn {
+      background: #FFD700;
+      color: #000;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <header>
+    <div class="logo">
+      <a href="index.html"><img src="assets/logo.png" alt="Princess Collection Logo"></a>
+    </div>
+    <div class="hamburger" id="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <nav id="navMenu">
+      <a href="index.html">Home</a>
+      <a href="shop.html">Shop</a>
+      <a href="cart.html" class="active">Cart 🛒</a>
+      <button id="logoutBtn" style="display:none">Logout 🚪</button>
+    </nav>
+  </header>
 
-  let { data: products, error } = await query
-  if (error) {
-    console.error(error)
-    return
-  }
+  <main>
+    <h2>My Cart</h2>
+    <div id="cart-items"></div>
+    <h3 id="cart-total">Total: ₹0</h3>
+    <button id="checkout-btn">Checkout</button>
+  </main>
 
-  const container = document.getElementById('product-list')
-  if (!container) return
+  <footer>
+    <p>© 2025 Princess Collection. All Rights Reserved.</p>
+  </footer>
 
-  container.innerHTML = ""
-  products.forEach(p => {
-    const stockStatus = p.stock > 0 
-      ? `<span style="color:lightgreen">In Stock (${p.stock})</span>` 
-      : `<span style="color:red">Out of Stock</span>`
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-    container.innerHTML += `
-      <div class="card">
-        <a href="product.html?id=${p.id}" style="text-decoration:none; color:inherit;">
-          <img src="${p.image_url || 'https://via.placeholder.com/200'}" alt="${p.name}">
-          <h3 style="color:#FFD700">${p.name}</h3>
-          <p style="color:#FFD700; font-weight:bold;">₹${p.price}</p>
-          ${p.size ? `<p style="color:#FFD700">Size: ${p.size}</p>` : ""}
-          <p>${stockStatus}</p>
-        </a>
-      </div>
-    `
-  })
-}
+    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// 🔍 Search Box
-const searchInput = document.getElementById("searchInput")
-if (searchInput) {
-  searchInput.addEventListener("input", (e) => {
-    const category = document.getElementById("categoryFilter")?.value || ""
-    const sortOrder = document.getElementById("priceSort")?.value || ""
-    loadProducts(e.target.value, category, sortOrder)
-  })
-}
+    const cartContainer = document.getElementById("cart-items")
+    const totalEl = document.getElementById("cart-total")
+    const logoutBtn = document.getElementById("logoutBtn")
 
-// 🏷️ Category Filter
-const categoryFilter = document.getElementById("categoryFilter")
-if (categoryFilter) {
-  categoryFilter.addEventListener("change", () => {
-    const searchQuery = searchInput?.value || ""
-    const sortOrder = document.getElementById("priceSort")?.value || ""
-    loadProducts(searchQuery, categoryFilter.value, sortOrder)
-  })
-}
+    let currentUser = null
 
-// 💰 Price Sort
-const priceSort = document.getElementById("priceSort")
-if (priceSort) {
-  priceSort.addEventListener("change", () => {
-    const searchQuery = searchInput?.value || ""
-    const category = document.getElementById("categoryFilter")?.value || ""
-    loadProducts(searchQuery, category, priceSort.value)
-  })
-}
+    // ✅ Check login
+    const { data: { user } } = await supabase.auth.getUser()
+    currentUser = user
+    if (!currentUser) {
+      window.location.href = "login.html" // force login
+    } else {
+      logoutBtn.style.display = "inline-block"
+    }
 
-// Initial Load
-loadProducts()
+    // ✅ Fetch cart
+    async function loadCart() {
+      let { data, error } = await supabase
+        .from("cart_items")
+        .select("id, quantity, products(id, name, price, stock, image_url)")
+        .eq("user_id", currentUser.id)
+
+      if (error) {
+        console.error("Cart fetch error:", error)
+        return
+      }
+
+      const cart = data.map(item => ({
+        id: item.id,
+        name: item.products.name,
+        price: item.products.price,
+        image: item.products.image_url,
+        quantity: item.quantity,
+        product_id: item.products.id,
+        stock: item.products.stock
+      }))
+
+      renderCart(cart)
+    }
+
+    // ✅ Render cart with stock check
+    function renderCart(cart) {
+      cartContainer.innerHTML = ""
+      let total = 0
+
+      cart.forEach((item, index) => {
+        total += item.price * item.quantity
+
+        const disablePlus = item.quantity >= item.stock ? "disabled" : ""
+
+        cartContainer.innerHTML += `
+          <div class="cart-item">
+            <img src="${item.image}" alt="${item.name}">
+            <div>
+              <h4>${item.name}</h4>
+              <p>₹${item.price} x ${item.quantity}</p>
+              <button onclick="updateQuantity(${index}, 1)" ${disablePlus}>+</button>
+              <button onclick="updateQuantity(${index}, -1)">-</button>
+              <button onclick="removeItem(${index})">Remove</button>
+              <p><small>Stock: ${item.stock}</small></p>
+            </div>
+          </div>
+        `
+      })
+
+      totalEl.textContent = "Total: ₹" + total
+      window._cart = cart
+    }
+
+    // ✅ Update Quantity
+    window.updateQuantity = async function (index, change) {
+      let cart = window._cart
+      let item = cart[index]
+      let newQty = item.quantity + change
+
+      if (newQty <= 0) {
+        await supabase.from("cart_items").delete().eq("id", item.id)
+      } else {
+        if (newQty > item.stock) {
+          alert(`⚠️ Only ${item.stock} available in stock!`)
+          return
+        }
+        await supabase.from("cart_items").update({ quantity: newQty }).eq("id", item.id)
+      }
+      loadCart()
+    }
+
+    // ✅ Remove Item
+    window.removeItem = async function (index) {
+      let cart = window._cart
+      let item = cart[index]
+      await supabase.from("cart_items").delete().eq("id", item.id)
+      loadCart()
+    }
+
+    // ✅ Checkout
+    document.getElementById("checkout-btn").addEventListener("click", () => {
+      window.location.href = "checkout.html"
+    })
+
+    // ✅ Logout
+    logoutBtn.addEventListener("click", async () => {
+      await supabase.auth.signOut()
+      window.location.href = "login.html"
+    })
+
+    // ✅ Hamburger toggle
+    const hamburger = document.getElementById("hamburger")
+    const navMenu = document.getElementById("navMenu")
+    hamburger.addEventListener("click", () => {
+      navMenu.classList.toggle("active")
+    })
+
+    // Initial Load
+    loadCart()
+  </script>
+</body>
+</html>
