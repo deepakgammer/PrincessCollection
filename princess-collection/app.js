@@ -1,289 +1,193 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Cart - Princess Collection</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    /* Navbar */
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
-      background: #000;
-      color: #FFD700;
-      position: relative;
-      z-index: 1000;
-    }
-    header .logo img {
-      height: 50px;
-    }
-    nav {
-      display: flex;
-      gap: 15px;
-    }
-    nav a, nav button {
-      color: #FFD700;
-      text-decoration: none;
-      font-weight: bold;
-      background: none;
-      border: none;
-      cursor: pointer;
-    }
-    nav a:hover,
-    nav a.active {
-      text-decoration: underline;
-    }
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-    /* Hamburger */
-    .hamburger {
-      display: none;
-      flex-direction: column;
-      cursor: pointer;
-    }
-    .hamburger span {
-      height: 3px;
-      width: 25px;
-      background: #FFD700;
-      margin: 4px 0;
-      border-radius: 2px;
-    }
+// =========================
+// ✅ Supabase credentials
+// =========================
+const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      nav {
-        display: none;
-        flex-direction: column;
-        background: #111;
-        position: absolute;
-        top: 60px;
-        right: 20px;
-        width: 200px;
-        border-radius: 8px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-        padding: 10px;
-      }
-      nav a, nav button {
-        padding: 10px;
-        border-bottom: 1px solid #333;
-        text-align: left;
-      }
-      nav a:last-child, nav button:last-child {
-        border-bottom: none;
-      }
-      .hamburger {
-        display: flex;
-      }
-      nav.active {
-        display: flex;
-      }
-    }
+// =========================
+// ✅ Detect environment
+// =========================
+const isLocalhost =
+  window.location.hostname.includes("127.0.0.1") ||
+  window.location.hostname.includes("localhost")
 
-    /* Cart styles */
-    main {
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 20px;
-      background: #111;
-      border: 1px solid #FFD700;
-      border-radius: 10px;
-      color: #FFD700;
-    }
-    .cart-item {
-      display: flex;
-      align-items: center;
-      border-bottom: 1px solid #333;
-      padding: 10px 0;
-    }
-    .cart-item img {
-      width: 80px;
-      height: 80px;
-      object-fit: cover;
-      border-radius: 5px;
-      margin-right: 15px;
-    }
-    .cart-item button {
-      margin: 5px;
-      padding: 5px 10px;
-      background: #FFD700;
-      border: none;
-      color: #000;
-      font-weight: bold;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .cart-item button:disabled {
-      background: #555;
-      color: #999;
-      cursor: not-allowed;
-    }
-    #checkout-btn {
-      background: #FFD700;
-      color: #000;
-      border: none;
-      padding: 12px 20px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 15px;
-    }
-  </style>
-</head>
-<body>
-  <!-- Navbar -->
-  <header>
-    <div class="logo">
-      <a href="index.html"><img src="assets/logo.png" alt="Princess Collection Logo"></a>
-    </div>
-    <div class="hamburger" id="hamburger">
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
-    <nav id="navMenu">
-      <a href="index.html">Home</a>
-      <a href="shop.html">Shop</a>
-      <a href="cart.html" class="active">Cart 🛒</a>
-      <button id="logoutBtn" style="display:none">Logout 🚪</button>
-    </nav>
-  </header>
+const baseURL = isLocalhost
+  ? "http://127.0.0.1:5500"
+  : "https://princesscollection.it.com"
 
-  <main>
-    <h2>My Cart</h2>
-    <div id="cart-items"></div>
-    <h3 id="cart-total">Total: ₹0</h3>
-    <button id="checkout-btn">Checkout</button>
-  </main>
+// =========================
+// ✅ Auth Check
+// =========================
+let {
+  data: { user },
+  error: authError,
+} = await supabase.auth.getUser()
+if (authError) console.warn("Auth fetch error:", authError.message)
 
-  <footer>
-    <p>© 2025 Princess Collection. All Rights Reserved.</p>
-  </footer>
+const currentUser = user
 
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+// Force login only on protected pages
+const protectedPages = ["cart.html", "checkout.html", "profile.html"]
+const isProtectedPage = protectedPages.some((p) =>
+  window.location.pathname.includes(p)
+)
 
-    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+if (!currentUser && isProtectedPage) {
+  window.location.href = "login.html"
+}
 
-    const cartContainer = document.getElementById("cart-items")
-    const totalEl = document.getElementById("cart-total")
-    const logoutBtn = document.getElementById("logoutBtn")
-
-    let currentUser = null
-
-    // ✅ Check login
-    const { data: { user } } = await supabase.auth.getUser()
-    currentUser = user
-    if (!currentUser) {
-      window.location.href = "login.html" // force login
-    } else {
-      logoutBtn.style.display = "inline-block"
-    }
-
-    // ✅ Fetch cart
-    async function loadCart() {
-      let { data, error } = await supabase
-        .from("cart_items")
-        .select("id, quantity, products(id, name, price, stock, image_url)")
-        .eq("user_id", currentUser.id)
-
-      if (error) {
-        console.error("Cart fetch error:", error)
-        return
-      }
-
-      const cart = data.map(item => ({
-        id: item.id,
-        name: item.products.name,
-        price: item.products.price,
-        image: item.products.image_url,
-        quantity: item.quantity,
-        product_id: item.products.id,
-        stock: item.products.stock
-      }))
-
-      renderCart(cart)
-    }
-
-    // ✅ Render cart with stock check
-    function renderCart(cart) {
-      cartContainer.innerHTML = ""
-      let total = 0
-
-      cart.forEach((item, index) => {
-        total += item.price * item.quantity
-
-        const disablePlus = item.quantity >= item.stock ? "disabled" : ""
-
-        cartContainer.innerHTML += `
-          <div class="cart-item">
-            <img src="${item.image}" alt="${item.name}">
-            <div>
-              <h4>${item.name}</h4>
-              <p>₹${item.price} x ${item.quantity}</p>
-              <button onclick="updateQuantity(${index}, 1)" ${disablePlus}>+</button>
-              <button onclick="updateQuantity(${index}, -1)">-</button>
-              <button onclick="removeItem(${index})">Remove</button>
-              <p><small>Stock: ${item.stock}</small></p>
-            </div>
-          </div>
-        `
-      })
-
-      totalEl.textContent = "Total: ₹" + total
-      window._cart = cart
-    }
-
-    // ✅ Update Quantity
-    window.updateQuantity = async function (index, change) {
-      let cart = window._cart
-      let item = cart[index]
-      let newQty = item.quantity + change
-
-      if (newQty <= 0) {
-        await supabase.from("cart_items").delete().eq("id", item.id)
-      } else {
-        if (newQty > item.stock) {
-          alert(`⚠️ Only ${item.stock} available in stock!`)
-          return
-        }
-        await supabase.from("cart_items").update({ quantity: newQty }).eq("id", item.id)
-      }
-      loadCart()
-    }
-
-    // ✅ Remove Item
-    window.removeItem = async function (index) {
-      let cart = window._cart
-      let item = cart[index]
-      await supabase.from("cart_items").delete().eq("id", item.id)
-      loadCart()
-    }
-
-    // ✅ Checkout
-    document.getElementById("checkout-btn").addEventListener("click", () => {
-      window.location.href = "checkout.html"
-    })
-
-    // ✅ Logout
+// =========================
+// ✅ Logout Button Setup
+// =========================
+const logoutBtn = document.getElementById("logoutBtn")
+if (logoutBtn) {
+  if (currentUser) {
+    logoutBtn.style.display = "inline-block"
     logoutBtn.addEventListener("click", async () => {
       await supabase.auth.signOut()
       window.location.href = "login.html"
     })
+  } else {
+    logoutBtn.style.display = "none"
+  }
+}
 
-    // ✅ Hamburger toggle
-    const hamburger = document.getElementById("hamburger")
-    const navMenu = document.getElementById("navMenu")
-    hamburger.addEventListener("click", () => {
-      navMenu.classList.toggle("active")
+// =========================
+// ✅ Google Login
+// =========================
+window.googleLogin = async function () {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${baseURL}/index.html`,
+    },
+  })
+  if (error) console.error("Google Login Error:", error.message)
+}
+
+// ✅ Global logout (backup)
+window.logout = async function () {
+  await supabase.auth.signOut()
+  window.location.href = "login.html"
+}
+
+// =========================
+// ✅ Load Products
+// =========================
+async function loadProducts(searchQuery = "", category = "", sortOrder = "") {
+  let query = supabase.from("products").select("*") // removed status filter
+
+  if (searchQuery) query = query.ilike("name", `%${searchQuery}%`)
+  if (category) query = query.eq("category", category)
+  if (sortOrder === "asc") query = query.order("price", { ascending: true })
+  if (sortOrder === "desc") query = query.order("price", { ascending: false })
+
+  let { data: products, error } = await query
+  if (error) {
+    console.error("Product fetch error:", error.message)
+    return
+  }
+
+  const container = document.getElementById("product-list")
+  if (!container) return
+
+  if (!products || !products.length) {
+    container.innerHTML =
+      "<p style='color:#FFD700; text-align:center;'>No products found 🚫</p>"
+    return
+  }
+
+  container.innerHTML = products
+    .map((p) => {
+      const stockStatus =
+        p.stock > 0
+          ? `<span style="color:lightgreen; font-size:14px;">In Stock (${p.stock})</span>`
+          : `<span style="color:red; font-size:14px;">Out of Stock</span>`
+
+      return `
+      <div class="card">
+        <a href="product.html?id=${p.id}" style="text-decoration:none; color:inherit;">
+          <img src="${
+            p.image_url || "https://via.placeholder.com/200"
+          }" alt="${p.name}">
+          <h3 style="color:#FFD700">${p.name}</h3>
+          <p style="color:#FFD700; font-weight:bold;">₹${p.price}</p>
+          ${p.size ? `<p style="color:#FFD700">Size: ${p.size}</p>` : ""}
+          <p>${stockStatus}</p>
+        </a>
+      </div>
+    `
     })
+    .join("")
+}
 
-    // Initial Load
-    loadCart()
-  </script>
-</body>
-</html>
+// =========================
+// 🔍 Filters & Search
+// =========================
+const searchInput = document.getElementById("searchInput")
+const categoryFilter = document.getElementById("categoryFilter")
+const priceSort = document.getElementById("priceSort")
+
+if (searchInput) {
+  searchInput.addEventListener("input", () => {
+    loadProducts(
+      searchInput.value,
+      categoryFilter?.value || "",
+      priceSort?.value || ""
+    )
+  })
+}
+
+if (categoryFilter) {
+  categoryFilter.addEventListener("change", () => {
+    loadProducts(
+      searchInput?.value || "",
+      categoryFilter.value,
+      priceSort?.value || ""
+    )
+  })
+}
+
+if (priceSort) {
+  priceSort.addEventListener("change", () => {
+    loadProducts(
+      searchInput?.value || "",
+      categoryFilter?.value || "",
+      priceSort.value
+    )
+  })
+}
+
+// =========================
+// ✅ Initial Load
+// =========================
+loadProducts()
+
+// =========================
+// ✅ Real-time Product Updates
+// =========================
+supabase
+  .channel("products-changes")
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "products" },
+    () => {
+      loadProducts(
+        searchInput?.value || "",
+        categoryFilter?.value || "",
+        priceSort?.value || ""
+      )
+    }
+  )
+  .subscribe()
+
+// =========================
+// ✅ Redirect after Order
+// =========================
+window.redirectAfterOrder = function () {
+  window.location.href = `${baseURL}/order-success.html`
+}
