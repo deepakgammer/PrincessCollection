@@ -5,6 +5,100 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Shop - Princess Collection</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Navbar */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #000;
+      color: #FFD700;
+      position: relative;
+      z-index: 1000;
+    }
+    header .logo img {
+      height: 50px;
+    }
+    nav {
+      display: flex;
+      gap: 15px;
+    }
+    nav a {
+      color: #FFD700;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    nav a:hover,
+    nav a.active {
+      text-decoration: underline;
+    }
+
+    /* Hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
+    }
+    .hamburger span {
+      height: 3px;
+      width: 25px;
+      background: #FFD700;
+      margin: 4px 0;
+      border-radius: 2px;
+    }
+
+    /* Responsive Dropdown */
+    @media (max-width: 768px) {
+      nav {
+        display: none;
+        flex-direction: column;
+        background: #111;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        width: 200px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+        padding: 10px;
+      }
+      nav a {
+        padding: 10px;
+        border-bottom: 1px solid #333;
+      }
+      nav a:last-child {
+        border-bottom: none;
+      }
+      .hamburger {
+        display: flex;
+      }
+      nav.active {
+        display: flex;
+      }
+    }
+
+    /* Filters styling */
+    .filters {
+      padding: 15px;
+      background: #111;
+      color: #FFD700;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+      justify-content: center;
+    }
+    .filters label {
+      margin-right: 5px;
+    }
+    .filters select {
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid #FFD700;
+      background: #000;
+      color: #FFD700;
+    }
+  </style>
 </head>
 <body>
   <!-- Navbar -->
@@ -12,7 +106,12 @@
     <div class="logo">
       <a href="index.html"><img src="assets/logo.png" alt="Princess Collection Logo"></a>
     </div>
-    <nav>
+    <div class="hamburger" id="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <nav id="navMenu">
       <a href="index.html">Home</a>
       <a href="shop.html" class="active">Shop</a>
       <a href="about.html">About</a>
@@ -59,6 +158,16 @@
   <footer>
     <p>© 2025 Princess Collection. All Rights Reserved.</p>
   </footer>
+
+  <!-- Hamburger toggle -->
+  <script>
+    const hamburger = document.getElementById("hamburger")
+    const navMenu = document.getElementById("navMenu")
+
+    hamburger.addEventListener("click", () => {
+      navMenu.classList.toggle("active")
+    })
+  </script>
 
   <!-- JS -->
   <script type="module" src="app.js"></script>
