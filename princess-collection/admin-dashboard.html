@@ -53,7 +53,7 @@
     <div class="dashboard">
       <div class="card">
         <h3>Total Orders</h3>
-        <div class="number" id="totalOrders">0 (Paid: 0 / Pending: 0)</div>
+        <div class="number" id="totalOrders">0</div>
       </div>
       <div class="card">
         <h3>Total Customers</h3>
@@ -79,11 +79,10 @@
               <th>ID</th>
               <th>Customer</th>
               <th>Total</th>
-              <th>Status</th>
             </tr>
           </thead>
           <tbody id="recentOrders">
-            <tr><td colspan="4">Loading...</td></tr>
+            <tr><td colspan="3">Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -142,10 +141,8 @@
     async function loadDashboard() {
       // Orders
       const { data: orders } = await supabase.from("orders").select("*")
-      let paid = orders?.filter(o => o.status === "paid").length || 0
-      let pending = orders?.filter(o => o.status !== "paid").length || 0
       let totalSales = orders?.reduce((sum, o) => sum + (o.total || 0), 0) || 0
-      document.getElementById("totalOrders").textContent = `${orders?.length || 0} (Paid: ${paid} / Pending: ${pending})`
+      document.getElementById("totalOrders").textContent = orders?.length || 0
       document.getElementById("totalSales").textContent = "₹" + totalSales.toFixed(2)
 
       // Customers
@@ -156,7 +153,7 @@
       const { data: feedback } = await supabase.from("feedback").select("*")
       document.getElementById("newMessages").textContent = feedback?.length || 0
 
-      // Recent Orders Table
+      // Recent Orders Table (last 5)
       const ordersTable = document.getElementById("recentOrders")
       ordersTable.innerHTML = orders?.length
         ? orders.slice(-5).reverse().map(o => `
@@ -164,10 +161,9 @@
             <td>${o.id}</td>
             <td>${o.customer_name || "-"}</td>
             <td>₹${o.total}</td>
-            <td>${o.status}</td>
           </tr>
         `).join("")
-        : "<tr><td colspan='4'>No orders yet</td></tr>"
+        : "<tr><td colspan='3'>No orders yet</td></tr>"
 
       // Low stock products
       const { data: products } = await supabase.from("products").select("*").lt("stock", 5)
