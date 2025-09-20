@@ -5,12 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Checkout</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <style>
     #checkout-form button:disabled {
       background: gray;
       cursor: not-allowed;
       opacity: 0.6;
+    }
+    .qr-section {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .qr-section img {
+      max-width: 250px;
+    }
+    .upload-proof {
+      margin-top: 20px;
+    }
+    #proceedBtn {
+      background: #ffd700;
+      color: black;
+      font-weight: bold;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 15px;
     }
   </style>
 </head>
@@ -33,7 +52,7 @@
   <!-- Checkout Section -->
   <main>
     <h2>Checkout</h2>
-    <div id="cart-summary"></div> <!-- 🛒 Order items + total -->
+    <div id="cart-summary"></div>
 
     <form id="checkout-form">
       <input type="text" id="name" placeholder="Full Name" required><br>
@@ -41,12 +60,27 @@
       <input type="text" id="whatsapp" placeholder="WhatsApp Number" required><br>
       <input type="email" id="email" placeholder="Email" required><br>
       <textarea id="address" placeholder="Shipping Address" required></textarea><br>
-      <button type="submit" id="payBtn">Pay with Razorpay</button>
+
+      <!-- Step 1 Button -->
+      <button type="button" id="proceedBtn">Proceed to Payment</button>
+
+      <!-- QR Code -->
+      <div class="qr-section" id="qr-section" style="display:none">
+        <h3>📲 Scan & Pay</h3>
+        <img id="qr-code" src="" alt="QR Code">
+        <p id="qr-amount"></p>
+      </div>
+
+      <!-- Proof Upload -->
+      <div class="upload-proof" id="proof-section" style="display:none">
+        <label>Upload Payment Proof Screenshot:</label><br>
+        <input type="file" id="paymentProof" accept="image/*" required><br><br>
+        <button type="submit" id="submitOrder">Submit Order</button>
+      </div>
     </form>
     <p id="message"></p>
   </main>
 
-  <!-- Footer -->
   <footer>
     <p>© 2025 Princess Collection. All Rights Reserved.</p>
   </footer>
@@ -58,23 +92,24 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-    const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/super-action`
-    const RAZORPAY_KEY_ID = "rzp_test_RH9xcaGD0ila5B"
-
     const form = document.getElementById("checkout-form")
     const message = document.getElementById("message")
     const cartSummary = document.getElementById("cart-summary")
-    const payBtn = document.getElementById("payBtn")
+    const qrSection = document.getElementById("qr-section")
+    const qrImg = document.getElementById("qr-code")
+    const qrAmount = document.getElementById("qr-amount")
+    const proofSection = document.getElementById("proof-section")
+    const proofInput = document.getElementById("paymentProof")
+    const proceedBtn = document.getElementById("proceedBtn")
 
     // ✅ Check login
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       message.textContent = "⚠️ Please log in to checkout."
-      payBtn.disabled = true
       throw new Error("No user logged in")
     }
 
-    // ✅ Load cart
+    // ✅ Load Cart
     async function loadCartFromSupabase() {
       let { data, error } = await supabase
         .from("cart_items")
@@ -100,7 +135,7 @@
       const cart = await loadCartFromSupabase()
       if (cart.length === 0) {
         cartSummary.innerHTML = "<p>🛒 Your cart is empty!</p>"
-        payBtn.disabled = true
+        proceedBtn.disabled = true
         return []
       }
 
@@ -121,36 +156,61 @@
         </div>
       `
 
-      // ✅ Minimum order check
       if (total < 500) {
-        const remaining = 500 - total
-        message.textContent = `⚠️ Minimum order is ₹500. Add ₹${remaining} more to continue.`
-        payBtn.disabled = true
+        message.textContent = `⚠️ Minimum order is ₹500. Add ₹${500 - total} more.`
+        proceedBtn.disabled = true
       } else {
         message.textContent = ""
-        payBtn.disabled = false
+        proceedBtn.disabled = false
       }
 
-      return cart
+      return { cart, total }
     }
 
-    let cart = await renderCartSummary()
+    let { cart, total } = await renderCartSummary()
 
-    // ✅ Checkout
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault()
-
-      if (cart.length === 0) {
+    // ✅ Step 1: Proceed Button → Show QR + Proof
+    proceedBtn.addEventListener("click", () => {
+      if (!cart || cart.length === 0) {
         message.textContent = "❌ Your cart is empty!"
         return
       }
 
-      let total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
-      if (total < 500) {
-        const remaining = 500 - total
-        message.textContent = `⚠️ Minimum order is ₹500. Add ₹${remaining} more to continue.`
+      qrSection.style.display = "block"
+      proofSection.style.display = "block"
+      proceedBtn.style.display = "none"
+
+      // ⚡ Generate UPI QR (replace with your real UPI ID)
+      const upiId = "9094900636@yescred"
+      const payUrl = `upi://pay?pa=${upiId}&pn=PrincessCollection&mc=0000&tid=${Date.now()}&tn=Order%20Payment&am=${total}&cu=INR`
+
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payUrl)}`
+      qrAmount.innerHTML = `Scan & Pay: <strong>₹${total}</strong>`
+
+      message.textContent = "📸 After payment, upload the screenshot below."
+    })
+
+    // ✅ Step 2: Submit Order → Upload Proof + Save
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault()
+
+      const file = proofInput.files[0]
+      if (!file) {
+        message.textContent = "⚠️ Please upload payment proof!"
         return
       }
+
+      // Upload proof
+      const filePath = `proofs/${user.id}_${Date.now()}_${file.name}`
+      let { error: uploadError } = await supabase.storage.from("payment_proofs").upload(filePath, file)
+
+      if (uploadError) {
+        console.error(uploadError)
+        message.textContent = "❌ Failed to upload proof."
+        return
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from("payment_proofs").getPublicUrl(filePath)
 
       const name = document.getElementById("name").value
       const phone = document.getElementById("phone").value
@@ -158,70 +218,33 @@
       const email = document.getElementById("email").value
       const address = document.getElementById("address").value
 
-      // 1️⃣ Create Razorpay Order
-      const res = await fetch(EDGE_FUNCTION_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({ amount: total, currency: "INR" })
-      })
+      let { error } = await supabase.from("orders").insert([{
+        user_id: user.id,
+        customer_name: name,
+        customer_phone: phone,
+        customer_whatsapp: whatsapp,
+        customer_email: email,
+        customer_address: address,
+        items: cart,
+        total: total,
+        status: "pending_verification",
+        payment_proof_url: publicUrl,
+        created_at: new Date().toISOString()
+      }])
 
-      const order = await res.json()
-      if (!order.id) {
-        message.textContent = "❌ Failed to create Razorpay order."
+      if (error) {
+        console.error("Order Save Error:", error)
+        message.textContent = "⚠️ Order save failed!"
         return
       }
 
-      // 2️⃣ Razorpay Checkout
-      const options = {
-        key: RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Princess Collection",
-        description: "Order Payment",
-        order_id: order.id,
-        handler: async function (response) {
-          // 3️⃣ Save Order
-          let { error } = await supabase.from("orders").insert([{
-            user_id: user.id,
-            customer_name: name,
-            customer_phone: phone,
-            customer_whatsapp: whatsapp,
-            customer_email: email,
-            customer_address: address,
-            items: cart,
-            total: total,
-            razorpay_order_id: order.id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            status: "paid",
-            created_at: new Date().toISOString()
-          }])
+      // Clear cart
+      await supabase.from("cart_items").delete().eq("user_id", user.id)
 
-          if (error) {
-            console.error("Supabase Insert Error:", error)
-            message.textContent = "⚠️ Payment succeeded, but order save failed!"
-            return
-          }
-
-          // ✅ Clear cart
-          await supabase.from("cart_items").delete().eq("user_id", user.id)
-
-          form.reset()
-          message.innerHTML = `
-            ✅ Payment Successful!<br>
-            <strong>Order ID:</strong> ${order.id}<br>
-            <strong>Payment ID:</strong> ${response.razorpay_payment_id}
-          `
-        },
-        prefill: { name, email, contact: phone },
-        notes: { address },
-        theme: { color: "#FFD700" }
-      }
-
-      const rzp = new Razorpay(options)
-      rzp.open()
+      form.reset()
+      qrSection.style.display = "none"
+      proofSection.style.display = "none"
+      message.innerHTML = `✅ Order Submitted!<br>We will verify your payment soon.`
     })
   </script>
 </body>
