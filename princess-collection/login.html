@@ -5,6 +5,93 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Princess Collection</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Navbar */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #000;
+      color: #FFD700;
+      position: relative;
+      z-index: 1000;
+    }
+    header .logo img {
+      height: 50px;
+    }
+    nav {
+      display: flex;
+      gap: 15px;
+    }
+    nav a {
+      color: #FFD700;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    /* Hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
+    }
+    .hamburger span {
+      height: 3px;
+      width: 25px;
+      background: #FFD700;
+      margin: 4px 0;
+      border-radius: 2px;
+    }
+
+    /* Responsive Dropdown */
+    @media (max-width: 768px) {
+      nav {
+        display: none;
+        flex-direction: column;
+        background: #111;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        width: 200px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+        padding: 10px;
+      }
+      nav a {
+        padding: 10px;
+        border-bottom: 1px solid #333;
+      }
+      nav a:last-child {
+        border-bottom: none;
+      }
+      .hamburger {
+        display: flex;
+      }
+      nav.active {
+        display: flex;
+      }
+    }
+
+    footer {
+      background: #111;
+      color: #FFD700;
+      text-align: center;
+      padding: 15px;
+      font-size: 0.9rem;
+    }
+    footer a {
+      color: #42a5f5;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
   <!-- Navbar -->
@@ -12,15 +99,24 @@
     <div class="logo">
       <img src="assets/logo.png" alt="Princess Collection Logo">
     </div>
-    <nav>
+    <div class="hamburger" id="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <nav id="navMenu">
       <a href="index.html">Home</a>
       <a href="shop.html">Shop</a>
       <a href="about.html">About</a>
       <a href="contact.html">Contact</a>
       <a href="cart.html">Cart 🛒</a>
+      <a href="login.html" id="loginBtn">Login</a>
+      <a href="profile.html" id="profileBtn" style="display:none;">My Account</a>
+      <a href="#" id="logoutBtn" style="display:none;">Logout 🚪</a>
     </nav>
   </header>
 
+  <!-- Main -->
   <main>
     <h2>Login</h2>
     <form id="login-form">
@@ -55,8 +151,10 @@
 
   <footer>
     <p>© 2025 Princess Collection. All Rights Reserved.</p>
+    <p>Made with ❤️ by <strong>DeeStudio</strong> | <a href="https://deestudio.it.com" target="_blank">🌐 deestudio.it.com</a></p>
   </footer>
 
+  <!-- Supabase + Navbar Control -->
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
 
@@ -65,44 +163,33 @@
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-    // Detect environment (localhost or production)
-    const isLocalhost = window.location.hostname.includes("127.0.0.1") || window.location.hostname.includes("localhost")
-    const redirectURL = isLocalhost 
-      ? "http://127.0.0.1:5500/index.html"
-      : "https://princesscollection.it.com/"
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // Email/password login
-    document.getElementById("login-form").addEventListener("submit", async (e) => {
-      e.preventDefault()
-      const email = document.getElementById("email").value
-      const password = document.getElementById("password").value
+    const loginBtn = document.getElementById("loginBtn")
+    const profileBtn = document.getElementById("profileBtn")
+    const logoutBtn = document.getElementById("logoutBtn")
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
+    if (user) {
+      loginBtn.style.display = "none"
+      profileBtn.style.display = "inline"
+      logoutBtn.style.display = "inline"
+    } else {
+      loginBtn.style.display = "inline"
+      profileBtn.style.display = "none"
+      logoutBtn.style.display = "none"
+    }
 
-      if (error) {
-        document.getElementById("message").textContent = "❌ " + error.message
-      } else {
-        document.getElementById("message").textContent = "✅ Login successful!"
-        localStorage.setItem("user", JSON.stringify(data.session))
-        window.location.href = "index.html"
-      }
+    logoutBtn?.addEventListener("click", async () => {
+      await supabase.auth.signOut()
+      window.location.href = "login.html"
     })
 
-    // Google login
-    document.getElementById("google-login").addEventListener("click", async () => {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectURL
-        }
-      })
+    // ✅ Hamburger toggle
+    const hamburger = document.getElementById("hamburger")
+    const navMenu = document.getElementById("navMenu")
 
-      if (error) {
-        document.getElementById("message").textContent = "❌ " + error.message
-      }
+    hamburger.addEventListener("click", () => {
+      navMenu.classList.toggle("active")
     })
   </script>
 </body>
