@@ -20,41 +20,41 @@ const baseURL = isLocalhost
   : "https://princesscollection.it.com"
 
 // =========================
-// ✅ Auth Check
+// ✅ Auth + Session Check
 // =========================
-let {
-  data: { user },
-  error: authError,
-} = await supabase.auth.getUser()
-if (authError) console.warn("Auth fetch error:", authError.message)
+document.addEventListener("DOMContentLoaded", async () => {
+  let {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+  if (authError) console.warn("Auth fetch error:", authError.message)
 
-const currentUser = user
+  const currentUser = user
 
-// Force login only on protected pages
-const protectedPages = ["cart.html", "checkout.html", "profile.html"]
-const isProtectedPage = protectedPages.some((p) =>
-  window.location.pathname.includes(p)
-)
+  // Force login only on protected pages
+  const protectedPages = ["cart.html", "checkout.html", "profile.html"]
+  const isProtectedPage = protectedPages.some((p) =>
+    window.location.pathname.includes(p)
+  )
 
-if (!currentUser && isProtectedPage) {
-  window.location.href = "login.html"
-}
-
-// =========================
-// ✅ Logout Button Setup
-// =========================
-const logoutBtn = document.getElementById("logoutBtn")
-if (logoutBtn) {
-  if (currentUser) {
-    logoutBtn.style.display = "inline-block"
-    logoutBtn.addEventListener("click", async () => {
-      await supabase.auth.signOut()
-      window.location.href = "login.html"
-    })
-  } else {
-    logoutBtn.style.display = "none"
+  if (!currentUser && isProtectedPage) {
+    window.location.href = "login.html"
   }
-}
+
+  // ✅ Logout Button Setup
+  const logoutBtn = document.getElementById("logoutBtn")
+  if (logoutBtn) {
+    if (currentUser) {
+      logoutBtn.style.display = "inline-block"
+      logoutBtn.addEventListener("click", async () => {
+        await supabase.auth.signOut()
+        window.location.href = "login.html"
+      })
+    } else {
+      logoutBtn.style.display = "none"
+    }
+  }
+})
 
 // =========================
 // ✅ Google Login
@@ -63,10 +63,33 @@ window.googleLogin = async function () {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${baseURL}/index.html`,
+      redirectTo: `${baseURL}/profile.html`, // redirect after login
     },
   })
   if (error) console.error("Google Login Error:", error.message)
+}
+
+// =========================
+// ✅ Email/Password Login
+// =========================
+const loginForm = document.getElementById("login-form")
+if (loginForm) {
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    const email = document.getElementById("email").value
+    const password = document.getElementById("password").value
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      document.getElementById("message").textContent = error.message
+    } else {
+      window.location.href = "profile.html"
+    }
+  })
 }
 
 // ✅ Global logout (backup)
@@ -79,7 +102,7 @@ window.logout = async function () {
 // ✅ Load Products
 // =========================
 async function loadProducts(searchQuery = "", category = "", sortOrder = "") {
-  let query = supabase.from("products").select("*") // removed status filter
+  let query = supabase.from("products").select("*")
 
   if (searchQuery) query = query.ilike("name", `%${searchQuery}%`)
   if (category) query = query.eq("category", category)
