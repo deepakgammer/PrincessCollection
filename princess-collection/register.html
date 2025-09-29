@@ -38,7 +38,7 @@
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
 
     const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"  // 🔑 replace
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
     document.getElementById("register-form").addEventListener("submit", async (e) => {
@@ -49,10 +49,16 @@
 
       let { data, error } = await supabase.auth.signUp({ email, password })
 
+      const message = document.getElementById("message")
+
       if (error) {
-        document.getElementById("message").textContent = "❌ " + error.message
+        message.textContent = "❌ " + error.message
       } else {
-        document.getElementById("message").textContent = "✅ Registration successful! Please login."
+        message.textContent = "✅ Account created! Redirecting..."
+        // Redirect after 1.5s
+        setTimeout(() => {
+          window.location.href = "account.html" // 🔄 or "shop.html"
+        }, 1500)
       }
     })
   </script>
