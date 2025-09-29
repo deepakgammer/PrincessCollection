@@ -155,72 +155,75 @@
   </footer>
 
   <!-- Supabase + Navbar Control -->
-  <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
 
-    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-    const baseURL = window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1")
-      ? "http://127.0.0.1:5500"
-      : "https://princesscollection.it.com"
+  const baseURL = window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1")
+    ? "http://127.0.0.1:5500"
+    : "https://princesscollection.it.com"
 
-    // ✅ Session UI
-    const { data: { user } } = await supabase.auth.getUser()
-    const loginBtn = document.getElementById("loginBtn")
-    const profileBtn = document.getElementById("profileBtn")
-    const logoutBtn = document.getElementById("logoutBtn")
+  // ✅ Session UI
+  const { data: { user } } = await supabase.auth.getUser()
+  const loginBtn = document.getElementById("loginBtn")
+  const profileBtn = document.getElementById("profileBtn")
+  const logoutBtn = document.getElementById("logoutBtn")
 
-    if (user) {
-      loginBtn.style.display = "none"
-      profileBtn.style.display = "inline"
-      logoutBtn.style.display = "inline"
-    } else {
-      loginBtn.style.display = "inline"
-      profileBtn.style.display = "none"
-      logoutBtn.style.display = "none"
+  if (user) {
+    loginBtn.style.display = "none"
+    profileBtn.style.display = "inline"
+    logoutBtn.style.display = "inline"
+  } else {
+    loginBtn.style.display = "inline"
+    profileBtn.style.display = "none"
+    logoutBtn.style.display = "none"
+  }
+
+  // ✅ Logout
+  logoutBtn?.addEventListener("click", async () => {
+    await supabase.auth.signOut()
+    window.location.href = "login.html"
+  })
+
+  // ✅ Hamburger toggle
+  document.getElementById("hamburger").addEventListener("click", () => {
+    document.getElementById("navMenu").classList.toggle("active")
+  })
+
+  // ✅ Google Login → redirect to index.html
+  document.getElementById("google-login").addEventListener("click", async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${baseURL}/index.html`
+      }
+    })
+    if (error) {
+      console.error("Google login error:", error.message)
+      document.getElementById("message").textContent = error.message
     }
+  })
 
-    logoutBtn?.addEventListener("click", async () => {
-      await supabase.auth.signOut()
-      window.location.href = "login.html"
-    })
+  // ✅ Email/Password Login → redirect to index.html
+  document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault()
+    const email = document.getElementById("email").value
+    const password = document.getElementById("password").value
 
-    // ✅ Hamburger toggle
-    document.getElementById("hamburger").addEventListener("click", () => {
-      document.getElementById("navMenu").classList.toggle("active")
-    })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-    // ✅ Google Login
-    document.getElementById("google-login").addEventListener("click", async () => {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${baseURL}/profile.html`
-        }
-      })
-      if (error) {
-        console.error("Google login error:", error.message)
-        document.getElementById("message").textContent = error.message
-      }
-    })
+    if (error) {
+      document.getElementById("message").textContent = error.message
+    } else {
+      window.location.href = "index.html"
+    }
+  })
+</script>
 
-    // ✅ Email/Password Login
-    document.getElementById("login-form").addEventListener("submit", async (e) => {
-      e.preventDefault()
-      const email = document.getElementById("email").value
-      const password = document.getElementById("password").value
-
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-
-      if (error) {
-        document.getElementById("message").textContent = error.message
-      } else {
-        window.location.href = "profile.html"
-      }
-    })
-  </script>
 </body>
 </html>
+
 
