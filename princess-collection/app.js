@@ -99,7 +99,7 @@ window.logout = async function () {
 }
 
 // =========================
-// ✅ Load Products
+// ✅ Load Products (Shop Page)
 // =========================
 async function loadProducts(searchQuery = "", category = "", sortOrder = "") {
   let query = supabase.from("products").select("*")
@@ -134,9 +134,7 @@ async function loadProducts(searchQuery = "", category = "", sortOrder = "") {
       return `
       <div class="card">
         <a href="product.html?id=${p.id}" style="text-decoration:none; color:inherit;">
-          <img src="${
-            p.image_url || "https://via.placeholder.com/200"
-          }" alt="${p.name}">
+          <img src="${p.image_url || "https://via.placeholder.com/200"}" alt="${p.name}">
           <h3 style="color:#FFD700">${p.name}</h3>
           <p style="color:#FFD700; font-weight:bold;">₹${p.price}</p>
           ${p.size ? `<p style="color:#FFD700">Size: ${p.size}</p>` : ""}
@@ -149,7 +147,48 @@ async function loadProducts(searchQuery = "", category = "", sortOrder = "") {
 }
 
 // =========================
-// 🔍 Filters & Search
+// ✅ Load Random Products (Index Page)
+// =========================
+async function loadRandomProducts(limit = 6) {
+  let { data: products, error } = await supabase.from("products").select("*")
+  if (error) {
+    console.error("Random Product fetch error:", error.message)
+    return
+  }
+
+  if (!products || !products.length) return
+
+  // Shuffle + slice
+  products = products.sort(() => Math.random() - 0.5).slice(0, limit)
+
+  const container = document.getElementById("product-list")
+  if (!container) return
+
+  container.innerHTML =
+    products
+      .map(
+        (p) => `
+      <div class="card">
+        <a href="product.html?id=${p.id}" style="text-decoration:none; color:inherit;">
+          <img src="${p.image_url || "https://via.placeholder.com/200"}" alt="${p.name}">
+          <h3 style="color:#FFD700">${p.name}</h3>
+          <p style="color:#FFD700; font-weight:bold;">₹${p.price}</p>
+        </a>
+      </div>
+    `
+      )
+      .join("") +
+    `
+    <div style="text-align:center; margin-top:20px; width:100%;">
+      <a href="shop.html" style="color:#FFD700; font-weight:bold; text-decoration:underline;">
+        View All Products →
+      </a>
+    </div>
+  `
+}
+
+// =========================
+// 🔍 Filters & Search (Shop Page)
 // =========================
 const searchInput = document.getElementById("searchInput")
 const categoryFilter = document.getElementById("categoryFilter")
@@ -186,9 +225,16 @@ if (priceSort) {
 }
 
 // =========================
-// ✅ Initial Load
+// ✅ Page Detection
 // =========================
-loadProducts()
+if (window.location.pathname.includes("shop.html")) {
+  loadProducts()
+} else if (
+  window.location.pathname.includes("index.html") ||
+  window.location.pathname === "/" // root
+) {
+  loadRandomProducts()
+}
 
 // =========================
 // ✅ Real-time Product Updates
@@ -199,11 +245,15 @@ supabase
     "postgres_changes",
     { event: "*", schema: "public", table: "products" },
     () => {
-      loadProducts(
-        searchInput?.value || "",
-        categoryFilter?.value || "",
-        priceSort?.value || ""
-      )
+      if (window.location.pathname.includes("shop.html")) {
+        loadProducts(
+          searchInput?.value || "",
+          categoryFilter?.value || "",
+          priceSort?.value || ""
+        )
+      } else {
+        loadRandomProducts()
+      }
     }
   )
   .subscribe()
