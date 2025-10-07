@@ -15,7 +15,7 @@
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #FFD700; padding-bottom: 10px; }
     header h1 { font-size: 22px; color: #FFD700; }
     header button { background: #FFD700; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-    .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+    .dashboard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-bottom: 30px; }
     .card { background: #111; border: 1px solid #FFD700; border-radius: 10px; padding: 20px; text-align: center; }
     .card h3 { margin-bottom: 10px; color: #FFD700; }
     .card .number { font-size: 22px; font-weight: bold; color: #fff; }
@@ -67,6 +67,10 @@
         <h3>New Messages</h3>
         <div class="number" id="newMessages">0</div>
       </div>
+      <div class="card">
+        <h3>Combo Products</h3>
+        <div class="number" id="comboCount">0</div>
+      </div>
     </div>
 
     <!-- Orders & Low Stock -->
@@ -116,6 +120,22 @@
         </thead>
         <tbody id="feedbackMessages">
           <tr><td colspan="3">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Category Summary -->
+    <div class="table-container">
+      <h3>Category Summary</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Total Products</th>
+          </tr>
+        </thead>
+        <tbody id="categorySummary">
+          <tr><td colspan="2">Loading...</td></tr>
         </tbody>
       </table>
     </div>
@@ -177,6 +197,13 @@
         `).join("")
         : "<tr><td colspan='2'>No low stock products</td></tr>"
 
+      // ✅ Combo Products Count
+      const { count: comboCount } = await supabase
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .eq("category", "Combo")
+      document.getElementById("comboCount").textContent = comboCount || 0
+
       // Feedback table
       const feedbackTable = document.getElementById("feedbackMessages")
       feedbackTable.innerHTML = feedback?.length
@@ -188,24 +215,35 @@
           </tr>
         `).join("")
         : "<tr><td colspan='3'>No messages yet</td></tr>"
+
+      // ✅ Category Summary
+      const { data: allProducts } = await supabase.from("products").select("category")
+      if (allProducts && allProducts.length) {
+        const grouped = {}
+        allProducts.forEach(p => {
+          grouped[p.category] = (grouped[p.category] || 0) + 1
+        })
+        const catTable = document.getElementById("categorySummary")
+        catTable.innerHTML = Object.entries(grouped)
+          .map(([cat, count]) => `
+            <tr>
+              <td>${cat}</td>
+              <td>${count}</td>
+            </tr>
+          `)
+          .join("")
+      } else {
+        document.getElementById("categorySummary").innerHTML = "<tr><td colspan='2'>No products</td></tr>"
+      }
     }
 
-    // Realtime updates
-    supabase.channel("orders-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, payload => loadDashboard())
-      .subscribe()
-
-    supabase.channel("customers-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, payload => loadDashboard())
-      .subscribe()
-
-    supabase.channel("products-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, payload => loadDashboard())
-      .subscribe()
-
-    supabase.channel("feedback-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "feedback" }, payload => loadDashboard())
-      .subscribe()
+    // ✅ Realtime updates
+    const tables = ["orders", "customers", "products", "feedback"]
+    tables.forEach(table => {
+      supabase.channel(`${table}-changes`)
+        .on("postgres_changes", { event: "*", schema: "public", table }, () => loadDashboard())
+        .subscribe()
+    })
 
     // Initial load
     loadDashboard()
