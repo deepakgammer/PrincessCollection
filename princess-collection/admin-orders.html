@@ -163,114 +163,133 @@
     <button class="close-btn" onclick="closeDetails()">❌ Close</button>
   </div>
 
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-    const table = document.getElementById("ordersTable")
-    const detailsPopup = document.getElementById("orderDetails")
-    const detailsContent = document.getElementById("detailsContent")
+  const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
 
-    // 📥 Load Orders
-    async function loadOrders() {
-      let { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false })
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-      if (error) {
-        console.error(error)
-        return
-      }
+  const table = document.getElementById("ordersTable")
+  const detailsPopup = document.getElementById("orderDetails")
+  const detailsContent = document.getElementById("detailsContent")
 
-      table.innerHTML = data.map(o => `
-        <tr>
-          <td>${o.id}</td>
-          <td>${o.customer_name}</td>
-          <td>₹${o.total}</td>
-          <td>${o.status}</td>
-          <td>${new Date(o.created_at).toLocaleDateString()}</td>
-          <td>
-            <button class="btn-view" onclick="viewOrder(${o.id})">View</button>
-            <button class="btn-delete" onclick="deleteOrder(${o.id})">Delete</button>
-          </td>
-        </tr>
-      `).join("")
+  // ✅ Load Orders
+  async function loadOrders() {
+    let { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Error fetching orders:", error)
+      table.innerHTML = `<tr><td colspan="6">❌ Failed to load orders</td></tr>`
+      return
     }
 
-    // 📦 View order details
-    window.viewOrder = async function(id) {
-      let { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", id)
-        .single()
+    console.log("Orders fetched:", data)
 
-      if (error) {
-        console.error(error)
-        return
-      }
-
-      // Format items
-      let itemsHtml = "<table class='items-table'><tr><th>Product</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>"
-      if (Array.isArray(data.items)) {
-        data.items.forEach(i => {
-          const subtotal = i.price * i.quantity
-          itemsHtml += `<tr>
-            <td>${i.name || "Product"}</td>
-            <td>${i.quantity}</td>
-            <td>₹${i.price}</td>
-            <td>₹${subtotal}</td>
-          </tr>`
-        })
-      }
-      itemsHtml += "</table>"
-
-      detailsContent.innerHTML = `
-        <p><strong>Customer:</strong> ${data.customer_name}</p>
-        <p><strong>Email:</strong> ${data.customer_email}</p>
-        <p><strong>Phone:</strong> ${data.customer_phone}</p>
-        <p><strong>Address:</strong> ${data.customer_address}</p>
-        <p><strong>Total:</strong> ₹${data.total}</p>
-        <p><strong>Status:</strong> ${data.status}</p>
-        <h3>Items:</h3>
-        ${itemsHtml}
-        ${data.payment_proof_url ? `
-          <h3>Payment Proof:</h3>
-          <a href="${data.payment_proof_url}" target="_blank">
-            <img src="${data.payment_proof_url}" alt="Payment Proof" class="proof-img">
-          </a>
-        ` : `<p>No payment proof uploaded</p>`}
-      `
-      detailsPopup.style.display = "block"
+    if (!data || data.length === 0) {
+      table.innerHTML = `<tr><td colspan="6">No orders found</td></tr>`
+      return
     }
 
-    // 🗑️ Hard Delete Order
-    window.deleteOrder = async function(id) {
-      if (!confirm("Are you sure you want to delete this order?")) return
+    table.innerHTML = data.map(o => `
+      <tr>
+        <td>${o.id ?? '-'}</td>
+        <td>${o.customer_name ?? '-'}</td>
+        <td>₹${o.total ?? '0.00'}</td>
+        <td>${o.status ?? 'Pending'}</td>
+        <td>${o.created_at ? new Date(o.created_at).toLocaleDateString() : '-'}</td>
+        <td>
+          <button class="btn-view" onclick="viewOrder(${o.id})">View</button>
+          <button class="btn-delete" onclick="deleteOrder(${o.id})">Delete</button>
+        </td>
+      </tr>
+    `).join("")
+  }
 
-      let { error } = await supabase
-        .from("orders")
-        .delete()
-        .eq("id", id)   // 👈 delete row from DB
+  // ✅ View Order Details
+  window.viewOrder = async function(id) {
+    let { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("id", id)
+      .single()
 
-      if (error) {
-        console.error("Delete failed:", error)
-        alert("❌ Failed to delete order")
-      } else {
-        alert("✅ Order deleted from database")
-        await loadOrders()   // refresh UI
-      }
+    if (error) {
+      console.error("View order error:", error)
+      alert("❌ Could not load order details")
+      return
     }
 
-    // 🚪 Close details
-    window.closeDetails = function() {
-      detailsPopup.style.display = "none"
+    // 🧾 Format Items
+    let itemsHtml = "<table class='items-table'><tr><th>Product</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>"
+    if (Array.isArray(data.items) && data.items.length > 0) {
+      data.items.forEach(i => {
+        const subtotal = (i.price || 0) * (i.quantity || 0)
+        itemsHtml += `<tr>
+          <td>${i.name || "Product"}</td>
+          <td>${i.quantity ?? '-'}</td>
+          <td>₹${i.price ?? '-'}</td>
+          <td>₹${subtotal.toFixed(2)}</td>
+        </tr>`
+      })
+    } else {
+      itemsHtml += `<tr><td colspan="4">No items listed</td></tr>`
     }
+    itemsHtml += "</table>"
 
-    loadOrders()
-  </script>
+    // 💬 Build Order Details
+    detailsContent.innerHTML = `
+      <p><strong>Customer:</strong> ${data.customer_name ?? '-'}</p>
+      <p><strong>Email:</strong> ${data.customer_email ?? '-'}</p>
+      <p><strong>Phone:</strong> ${data.customer_phone ?? '-'}</p>
+      <p><strong>WhatsApp:</strong> ${data.customer_whatsapp ?? '-'}</p>
+      <p><strong>Address:</strong> ${data.customer_address ?? '-'}</p>
+      <p><strong>Total:</strong> ₹${data.total ?? '0.00'}</p>
+      <p><strong>Status:</strong> ${data.status ?? 'Pending'}</p>
+      <p><strong>Created At:</strong> ${data.created_at ? new Date(data.created_at).toLocaleString() : '-'}</p>
+      <h3>🛍️ Items:</h3>
+      ${itemsHtml}
+      ${data.payment_proof_url ? `
+        <h3>📎 Payment Proof:</h3>
+        <a href="${data.payment_proof_url}" target="_blank">
+          <img src="${data.payment_proof_url}" alt="Payment Proof" class="proof-img">
+        </a>
+      ` : `<p>No payment proof uploaded</p>`}
+    `
+    detailsPopup.style.display = "block"
+  }
+
+  // 🗑️ Delete Order
+  window.deleteOrder = async function(id) {
+    if (!confirm("Are you sure you want to delete this order?")) return
+
+    let { error } = await supabase
+      .from("orders")
+      .delete()
+      .eq("id", id)
+
+    if (error) {
+      console.error("Delete failed:", error)
+      alert("❌ Failed to delete order")
+    } else {
+      alert("✅ Order deleted successfully")
+      await loadOrders()
+    }
+  }
+
+  // 🚪 Close Details Popup
+  window.closeDetails = function() {
+    detailsPopup.style.display = "none"
+  }
+
+  // Initial Load
+  loadOrders()
+</script>
+
 </body>
 </html>
+
