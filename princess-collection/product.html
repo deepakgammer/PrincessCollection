@@ -17,34 +17,30 @@
       padding: 20px;
       align-items: flex-start;
     }
+
+    /* LEFT COLUMN FIX */
     .product-image {
       flex: 1;
       display: flex;
-      justify-content: center;
+      flex-direction: column;   /* STACK IMAGE + QTY */
+      align-items: center;      /* CENTER THEM */
     }
+
     .product-image img {
       max-width: 100%;
       width: 350px;
       border-radius: 10px;
       border: 2px solid #FFD700;
     }
-    .product-info {
-      flex: 2;
-      color: #FFD700;
-    }
-    .product-info h2 {
-      margin-bottom: 10px;
-    }
-    .product-info p {
-      margin: 6px 0;
-    }
+
     .qty-controls {
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       gap: 12px;
-      margin: 15px 0;
+      margin-top: 15px;
     }
+
     .qty-btn {
       padding: 6px 12px;
       font-size: 18px;
@@ -54,11 +50,27 @@
       cursor: pointer;
       font-weight: bold;
     }
+
     #qtyValue {
       font-size: 20px;
       font-weight: bold;
       color: white;
     }
+
+    /* RIGHT COLUMN */
+    .product-info {
+      flex: 2;
+      color: #FFD700;
+    }
+
+    .product-info h2 {
+      margin-bottom: 10px;
+    }
+
+    .product-info p {
+      margin: 6px 0;
+    }
+
     .add-btn {
       margin-top: 15px;
       padding: 10px 20px;
@@ -69,6 +81,7 @@
       border-radius: 6px;
       cursor: pointer;
     }
+
     .add-btn:hover {
       background: #fff;
       color: #000;
@@ -146,35 +159,36 @@
         return;
       }
 
-document.getElementById("product-detail").innerHTML = `
-  <div class="product-image">
-    <img src="${data.image_url}" alt="${data.name}">
+      document.getElementById("product-detail").innerHTML = `
+        <!-- LEFT COLUMN -->
+        <div class="product-image">
+          <img src="${data.image_url}" alt="${data.name}">
 
-    <!-- Quantity selector under IMAGE -->
-    <div class="qty-controls" style="margin-top: 20px; justify-content:center;">
-      <button class="qty-btn" id="decreaseQty">-</button>
-      <span id="qtyValue">1</span>
-      <button class="qty-btn" id="increaseQty">+</button>
-    </div>
-  </div>
+          <!-- QUANTITY BELOW IMAGE -->
+          <div class="qty-controls">
+            <button class="qty-btn" id="decreaseQty">-</button>
+            <span id="qtyValue">1</span>
+            <button class="qty-btn" id="increaseQty">+</button>
+          </div>
+        </div>
 
-  <div class="product-info">
-    <h2>${data.name}</h2>
-    <p>${data.description || "No description available."}</p>
+        <!-- RIGHT COLUMN -->
+        <div class="product-info">
+          <h2>${data.name}</h2>
+          <p>${data.description || "No description available."}</p>
 
-    <p><strong>Weight:</strong> ${data.weight || "-"} kg</p>
-    <p><strong>Size:</strong> ${data.size || "-"}</p>
-    <p><strong>Stock:</strong> ${data.stock > 0 ? data.stock : "Out of Stock"}</p>
-    <p><strong>Price:</strong> ₹${data.price}</p>
+          <p><strong>Weight:</strong> ${data.weight || "-"} kg</p>
+          <p><strong>Size:</strong> ${data.size || "-"}</p>
+          <p><strong>Stock:</strong> ${data.stock > 0 ? data.stock : "Out of Stock"}</p>
+          <p><strong>Price:</strong> ₹${data.price}</p>
 
-    ${
-      data.stock > 0
-        ? `<button class="add-btn" id="addToCartBtn">Add to Cart</button>`
-        : `<p style="color:red;">Out of Stock</p>`
-    }
-  </div>
-`;
-
+          ${
+            data.stock > 0
+              ? `<button class="add-btn" id="addToCartBtn">Add to Cart</button>`
+              : `<p style="color:red;">Out of Stock</p>`
+          }
+        </div>
+      `;
 
       setupQuantityAndCart(data);
     }
