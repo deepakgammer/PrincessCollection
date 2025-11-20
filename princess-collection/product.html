@@ -15,7 +15,7 @@
       border: 1px solid #FFD700;
       border-radius: 10px;
       padding: 20px;
-      align-items: flex-start; /* image + details start from top */
+      align-items: flex-start;
     }
     .product-image {
       flex: 1;
@@ -38,7 +38,27 @@
     .product-info p {
       margin: 6px 0;
     }
-    .product-info button {
+    .qty-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 10px 0;
+    }
+    .qty-btn {
+      padding: 6px 12px;
+      font-size: 18px;
+      background: #FFD700;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #qtyValue {
+      font-size: 20px;
+      font-weight: bold;
+      color: white;
+    }
+    .add-btn {
       margin-top: 15px;
       padding: 10px 20px;
       font-size: 16px;
@@ -47,15 +67,15 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      transition: background 0.2s;
     }
-    .product-info button:hover {
+    .add-btn:hover {
       background: white;
       color: black;
     }
   </style>
 </head>
 <body>
+
   <!-- Navbar -->
   <header class="navbar">
     <div class="logo">
@@ -75,7 +95,6 @@
     <p id="message"></p>
   </main>
 
-  <!-- Footer -->
   <footer>
     <p>© 2025 Princess Collection. All Rights Reserved.</p>
   </footer>
@@ -102,29 +121,7 @@
       })
     }
 
-    // ✅ Add to cart
-    window.addToCart = async function (product) {
-      let { data: existing, error: fetchError } = await supabase
-        .from("cart_items")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("product_id", product.id)
-        .single()
-
-      if (existing) {
-        if (existing.quantity >= product.stock) {
-          messageEl.textContent = "⚠️ Stock limit reached!"
-          return
-        }
-        await supabase.from("cart_items").update({ quantity: existing.quantity + 1 }).eq("id", existing.id)
-        messageEl.textContent = `✅ ${product.name} quantity updated in cart!`
-      } else {
-        await supabase.from("cart_items").insert([{ user_id: user.id, product_id: product.id, quantity: 1 }])
-        messageEl.textContent = `✅ ${product.name} added to cart!`
-      }
-    }
-
-    // ✅ Load product
+    // Load Product
     async function loadProduct() {
       if (!productId) {
         document.getElementById("product-detail").innerHTML = "<p>No product selected.</p>"
@@ -149,15 +146,84 @@
           <p><strong>Size:</strong> ${data.size || "-"}</p>
           <p><strong>Stock:</strong> ${data.stock > 0 ? data.stock : "Out of Stock"}</p>
           <p><strong>Price:</strong> ₹${data.price}</p>
-          ${data.discount_price ? `<p>Discount: ₹${data.discount_price}</p>` : ""}
-          ${data.stock > 0 
-            ? `<button onclick='addToCart(${JSON.stringify(data)})'>Add to Cart</button>` 
-            : `<p style="color:red;">Out of Stock</p>`}
+
+          ${data.stock > 0 ? `
+            <div>
+              <p><strong>Quantity:</strong></p>
+              <div class="qty-controls">
+                <button class="qty-btn" id="decreaseQty">-</button>
+                <span id="qtyValue">1</span>
+                <button class="qty-btn" id="increaseQty">+</button>
+              </div>
+
+              <button class="add-btn" id="addToCartBtn">Add to Cart</button>
+            </div>
+          ` : `<p style="color:red;">Out of Stock</p>`}
         </div>
       `
+
+      setupQuantityAndCart(data)
+    }
+
+    // Quantity + Add to Cart Logic
+    function setupQuantityAndCart(product) {
+      const qtyValue = document.getElementById("qtyValue")
+      const increaseBtn = document.getElementById("increaseQty")
+      const decreaseBtn = document.getElementById("decreaseQty")
+      const addToCartBtn = document.getElementById("addToCartBtn")
+
+      if (!qtyValue) return
+
+      let currentQty = 1
+
+      increaseBtn.onclick = () => {
+        if (currentQty >= product.stock) {
+          messageEl.textContent = "⚠️ Stock limit reached!"
+          return
+        }
+        currentQty++
+        qtyValue.textContent = currentQty
+      }
+
+      decreaseBtn.onclick = () => {
+        if (currentQty > 1) {
+          currentQty--
+          qtyValue.textContent = currentQty
+        }
+      }
+
+      addToCartBtn.onclick = async () => {
+        let { data: existing } = await supabase
+          .from("cart_items")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("product_id", product.id)
+          .single()
+
+        if (existing) {
+          let newQty = existing.quantity + currentQty
+          if (newQty > product.stock) {
+            messageEl.textContent = "⚠️ Stock limit reached!"
+            return
+          }
+
+          await supabase.from("cart_items")
+            .update({ quantity: newQty })
+            .eq("id", existing.id)
+
+          messageEl.textContent = "✅ Updated quantity in cart!"
+        } else {
+          await supabase.from("cart_items").insert([
+            { user_id: user.id, product_id: product.id, quantity: currentQty }
+          ])
+
+          messageEl.textContent = "✅ Added to cart!"
+        }
+      }
     }
 
     loadProduct()
   </script>
+
 </body>
 </html>
