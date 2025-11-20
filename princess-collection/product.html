@@ -146,34 +146,35 @@
         return;
       }
 
-      document.getElementById("product-detail").innerHTML = `
-        <div class="product-image">
-          <img src="${data.image_url}" alt="${data.name}">
-        </div>
+document.getElementById("product-detail").innerHTML = `
+  <div class="product-image">
+    <img src="${data.image_url}" alt="${data.name}">
 
-        <div class="product-info">
+    <!-- Quantity selector under IMAGE -->
+    <div class="qty-controls" style="margin-top: 20px; justify-content:center;">
+      <button class="qty-btn" id="decreaseQty">-</button>
+      <span id="qtyValue">1</span>
+      <button class="qty-btn" id="increaseQty">+</button>
+    </div>
+  </div>
 
-          <!-- Quantity under image -->
-          <div class="qty-controls">
-            <button class="qty-btn" id="decreaseQty">-</button>
-            <span id="qtyValue">1</span>
-            <button class="qty-btn" id="increaseQty">+</button>
-          </div>
+  <div class="product-info">
+    <h2>${data.name}</h2>
+    <p>${data.description || "No description available."}</p>
 
-          <h2>${data.name}</h2>
-          <p>${data.description || "No description available."}</p>
-          <p><strong>Weight:</strong> ${data.weight || "-"} kg</p>
-          <p><strong>Size:</strong> ${data.size || "-"}</p>
-          <p><strong>Stock:</strong> ${data.stock > 0 ? data.stock : "Out of Stock"}</p>
-          <p><strong>Price:</strong> ₹${data.price}</p>
+    <p><strong>Weight:</strong> ${data.weight || "-"} kg</p>
+    <p><strong>Size:</strong> ${data.size || "-"}</p>
+    <p><strong>Stock:</strong> ${data.stock > 0 ? data.stock : "Out of Stock"}</p>
+    <p><strong>Price:</strong> ₹${data.price}</p>
 
-          ${data.stock > 0
-            ? `<button class="add-btn" id="addToCartBtn">Add to Cart</button>`
-            : `<p style="color:red;">Out of Stock</p>`
-          }
+    ${
+      data.stock > 0
+        ? `<button class="add-btn" id="addToCartBtn">Add to Cart</button>`
+        : `<p style="color:red;">Out of Stock</p>`
+    }
+  </div>
+`;
 
-        </div>
-      `;
 
       setupQuantityAndCart(data);
     }
