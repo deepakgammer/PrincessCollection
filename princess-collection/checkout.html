@@ -34,7 +34,7 @@
   </style>
 </head>
 <body>
-  <!-- Navbar -->
+
   <header>
     <div class="logo">
       <img src="assets/logo.png" alt="Princess Collection Logo">
@@ -49,9 +49,9 @@
     </nav>
   </header>
 
-  <!-- Checkout Section -->
   <main>
     <h2>Checkout</h2>
+
     <div id="cart-summary"></div>
 
     <form id="checkout-form">
@@ -61,23 +61,21 @@
       <input type="email" id="email" placeholder="Email" required><br>
       <textarea id="address" placeholder="Shipping Address" required></textarea><br>
 
-      <!-- Step 1 Button -->
       <button type="button" id="proceedBtn">Proceed to Payment</button>
 
-      <!-- QR Code -->
       <div class="qr-section" id="qr-section" style="display:none">
         <h3>📲 Scan & Pay</h3>
         <img id="qr-code" src="" alt="QR Code">
         <p id="qr-amount"></p>
       </div>
 
-      <!-- Proof Upload -->
       <div class="upload-proof" id="proof-section" style="display:none">
         <label>Upload Payment Proof Screenshot:</label><br>
         <input type="file" id="paymentProof" accept="image/*" required><br><br>
         <button type="submit" id="submitOrder">Submit Order</button>
       </div>
     </form>
+
     <p id="message"></p>
   </main>
 
@@ -102,25 +100,22 @@
     const proofInput = document.getElementById("paymentProof")
     const proceedBtn = document.getElementById("proceedBtn")
 
-    // ✅ Check login
+    let finalTotal = 0
+    let shipping = 0
+
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       message.textContent = "⚠️ Please log in to checkout."
       throw new Error("No user logged in")
     }
 
-    // ✅ Load Cart
     async function loadCartFromSupabase() {
       let { data, error } = await supabase
         .from("cart_items")
         .select("*, products(*)")
         .eq("user_id", user.id)
 
-      if (error) {
-        console.error(error)
-        return []
-      }
-
+      if (error) return []
       return data.map(item => ({
         id: item.product_id,
         name: item.products?.name,
@@ -130,7 +125,6 @@
       }))
     }
 
-    // ✅ Render Cart
     async function renderCartSummary() {
       const cart = await loadCartFromSupabase()
       if (cart.length === 0) {
@@ -152,65 +146,54 @@
               </div>
             `
           }).join("")}
-          <p class="grand-total"><strong>Total: ₹${total}</strong></p>
-        </div>
       `
 
       if (total < 500) {
-        message.textContent = `⚠️ Minimum order is ₹500. Add ₹${500 - total} more.`
-        proceedBtn.disabled = true
+        shipping = 90
+        message.textContent = `🚚 Shipping ₹90 applied (Orders below ₹500)`
       } else {
-        message.textContent = ""
-        proceedBtn.disabled = false
+        shipping = 0
+        message.textContent = `🚚 Free Shipping`
       }
 
-      return { cart, total }
+      finalTotal = total + shipping
+
+      cartSummary.innerHTML += `
+          <p><strong>Subtotal: ₹${total}</strong></p>
+          <p><strong>Shipping: ₹${shipping}</strong></p>
+          <p class="grand-total"><strong>Final Total: ₹${finalTotal}</strong></p>
+        </div>
+      `
+
+      return { cart, finalTotal }
     }
 
-    let { cart, total } = await renderCartSummary()
+    let { cart } = await renderCartSummary()
 
-    // ✅ Step 1: Proceed Button → Show QR + Proof
     proceedBtn.addEventListener("click", () => {
-      if (!cart || cart.length === 0) {
-        message.textContent = "❌ Your cart is empty!"
-        return
-      }
-
       qrSection.style.display = "block"
       proofSection.style.display = "block"
       proceedBtn.style.display = "none"
 
-      // ⚡ Generate UPI QR (replace with your real UPI ID)
       const upiId = "9094900636@yescred"
-      const payUrl = `upi://pay?pa=${upiId}&pn=PrincessCollection&mc=0000&tid=${Date.now()}&tn=Order%20Payment&am=${total}&cu=INR`
+      const payUrl = `upi://pay?pa=${upiId}&pn=PrincessCollection&am=${finalTotal}&cu=INR`
 
       qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payUrl)}`
-      qrAmount.innerHTML = `Scan & Pay: <strong>₹${total}</strong>`
-
-      message.textContent = "📸 After payment, upload the screenshot below."
+      qrAmount.innerHTML = `Scan & Pay: <strong>₹${finalTotal}</strong>`
     })
 
-    // ✅ Step 2: Submit Order → Upload Proof + Save
     form.addEventListener("submit", async (e) => {
       e.preventDefault()
 
       const file = proofInput.files[0]
-      if (!file) {
-        message.textContent = "⚠️ Please upload payment proof!"
-        return
-      }
+      if (!file) return message.textContent = "⚠️ Please upload payment proof!"
 
-      // Upload proof
       const filePath = `proofs/${user.id}_${Date.now()}_${file.name}`
       let { error: uploadError } = await supabase.storage.from("payment_proofs").upload(filePath, file)
+      if (uploadError) return message.textContent = "❌ Failed to upload proof."
 
-      if (uploadError) {
-        console.error(uploadError)
-        message.textContent = "❌ Failed to upload proof."
-        return
-      }
-
-      const { data: { publicUrl } } = supabase.storage.from("payment_proofs").getPublicUrl(filePath)
+      const { data: { publicUrl } } =
+        supabase.storage.from("payment_proofs").getPublicUrl(filePath)
 
       const name = document.getElementById("name").value
       const phone = document.getElementById("phone").value
@@ -226,26 +209,24 @@
         customer_email: email,
         customer_address: address,
         items: cart,
-        total: total,
+        total: finalTotal,
+        shipping_charge: shipping,
         status: "pending_verification",
         payment_proof_url: publicUrl,
         created_at: new Date().toISOString()
       }])
 
-      if (error) {
-        console.error("Order Save Error:", error)
-        message.textContent = "⚠️ Order save failed!"
-        return
-      }
+      if (error) return message.textContent = "⚠️ Order save failed!"
 
-      // Clear cart
       await supabase.from("cart_items").delete().eq("user_id", user.id)
 
       form.reset()
       qrSection.style.display = "none"
       proofSection.style.display = "none"
-      message.innerHTML = `✅ Order Submitted!<br>We will verify your payment soon.`
+
+      message.innerHTML = `✅ Order Submitted!<br>We will verify your payment shortly.`
     })
   </script>
+
 </body>
 </html>
