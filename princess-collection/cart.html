@@ -3,159 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Cart - Princess Collection</title>
+  <title>Checkout</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Navbar */
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
-      background: #000;
-      color: #FFD700;
-      position: relative;
-      z-index: 1000;
-    }
-    header .logo img {
-      height: 50px;
-    }
-    nav {
-      display: flex;
-      gap: 15px;
-    }
-    nav a, nav button {
-      color: #FFD700;
-      text-decoration: none;
-      font-weight: bold;
-      background: none;
-      border: none;
-      cursor: pointer;
-    }
-    nav a:hover,
-    nav a.active {
-      text-decoration: underline;
-    }
-
-    /* Hamburger */
-    .hamburger {
-      display: none;
-      flex-direction: column;
-      cursor: pointer;
-    }
-    .hamburger span {
-      height: 3px;
-      width: 25px;
-      background: #FFD700;
-      margin: 4px 0;
-      border-radius: 2px;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      nav {
-        display: none;
-        flex-direction: column;
-        background: #111;
-        position: absolute;
-        top: 60px;
-        right: 20px;
-        width: 200px;
-        border-radius: 8px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-        padding: 10px;
-      }
-      nav a, nav button {
-        padding: 10px;
-        border-bottom: 1px solid #333;
-        text-align: left;
-      }
-      nav a:last-child, nav button:last-child {
-        border-bottom: none;
-      }
-      .hamburger {
-        display: flex;
-      }
-      nav.active {
-        display: flex;
-      }
-    }
-
-    /* Cart styles */
-    main {
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 20px;
-      background: #111;
-      border: 1px solid #FFD700;
-      border-radius: 10px;
-      color: #FFD700;
-    }
-    .cart-item {
-      display: flex;
-      align-items: center;
-      border-bottom: 1px solid #333;
-      padding: 10px 0;
-    }
-    .cart-item img {
-      width: 80px;
-      height: 80px;
-      object-fit: cover;
-      border-radius: 5px;
-      margin-right: 15px;
-    }
-    .cart-item button {
-      margin: 5px;
-      padding: 5px 10px;
-      background: #FFD700;
-      border: none;
-      color: #000;
-      font-weight: bold;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .cart-item button:disabled {
-      background: #555;
-      color: #999;
+    #checkout-form button:disabled {
+      background: gray;
       cursor: not-allowed;
+      opacity: 0.6;
     }
-    #checkout-btn {
-      background: #FFD700;
-      color: #000;
-      border: none;
-      padding: 12px 20px;
-      font-size: 16px;
+    .qr-section {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .qr-section img {
+      max-width: 250px;
+    }
+    .upload-proof {
+      margin-top: 20px;
+    }
+    #proceedBtn {
+      background: #ffd700;
+      color: black;
       font-weight: bold;
-      border-radius: 5px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
       margin-top: 15px;
     }
   </style>
 </head>
 <body>
-  <!-- Navbar -->
+
   <header>
     <div class="logo">
-      <a href="index.html"><img src="assets/logo.png" alt="Princess Collection Logo"></a>
+      <img src="assets/logo.png" alt="Princess Collection Logo">
     </div>
-    <div class="hamburger" id="hamburger">
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
-    <nav id="navMenu">
+    <nav>
       <a href="index.html">Home</a>
       <a href="shop.html">Shop</a>
-      <a href="cart.html" class="active">Cart 🛒</a>
-      <button id="logoutBtn" style="display:none">Logout 🚪</button>
+      <a href="#">About</a>
+      <a href="#">Contact</a>
+      <a href="cart.html">Cart 🛒</a>
+      <button id="logoutBtn" style="display:none">Logout</button>
     </nav>
   </header>
 
   <main>
-    <h2>My Cart</h2>
-    <div id="cart-items"></div>
-    <h3 id="cart-total">Total: ₹0</h3>
-    <button id="checkout-btn">Checkout</button>
+    <h2>Checkout</h2>
+
+    <div id="cart-summary"></div>
+
+    <form id="checkout-form">
+      <input type="text" id="name" placeholder="Full Name" required><br>
+      <input type="text" id="phone" placeholder="Phone Number" required><br>
+      <input type="text" id="whatsapp" placeholder="WhatsApp Number" required><br>
+      <input type="email" id="email" placeholder="Email" required><br>
+      <textarea id="address" placeholder="Shipping Address" required></textarea><br>
+
+      <button type="button" id="proceedBtn">Proceed to Payment</button>
+
+      <div class="qr-section" id="qr-section" style="display:none">
+        <h3>📲 Scan & Pay</h3>
+        <img id="qr-code" src="" alt="QR Code">
+        <p id="qr-amount"></p>
+      </div>
+
+      <div class="upload-proof" id="proof-section" style="display:none">
+        <label>Upload Payment Proof Screenshot:</label><br>
+        <input type="file" id="paymentProof" accept="image/*" required><br><br>
+        <button type="submit" id="submitOrder">Submit Order</button>
+      </div>
+    </form>
+
+    <p id="message"></p>
   </main>
 
   <footer>
@@ -169,121 +90,143 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-    const cartContainer = document.getElementById("cart-items")
-    const totalEl = document.getElementById("cart-total")
-    const logoutBtn = document.getElementById("logoutBtn")
+    const form = document.getElementById("checkout-form")
+    const message = document.getElementById("message")
+    const cartSummary = document.getElementById("cart-summary")
+    const qrSection = document.getElementById("qr-section")
+    const qrImg = document.getElementById("qr-code")
+    const qrAmount = document.getElementById("qr-amount")
+    const proofSection = document.getElementById("proof-section")
+    const proofInput = document.getElementById("paymentProof")
+    const proceedBtn = document.getElementById("proceedBtn")
 
-    let currentUser = null
+    let finalTotal = 0
+    let shipping = 0
 
-    // ✅ Check login
     const { data: { user } } = await supabase.auth.getUser()
-    currentUser = user
-    if (!currentUser) {
-      window.location.href = "login.html" // force login
-    } else {
-      logoutBtn.style.display = "inline-block"
+    if (!user) {
+      message.textContent = "⚠️ Please log in to checkout."
+      throw new Error("No user logged in")
     }
 
-    // ✅ Fetch cart
-    async function loadCart() {
+    async function loadCartFromSupabase() {
       let { data, error } = await supabase
         .from("cart_items")
-        .select("id, quantity, products(id, name, price, stock, image_url)")
-        .eq("user_id", currentUser.id)
+        .select("*, products(*)")
+        .eq("user_id", user.id)
 
-      if (error) {
-        console.error("Cart fetch error:", error)
-        return
-      }
-
-      const cart = data.map(item => ({
-        id: item.id,
-        name: item.products.name,
-        price: item.products.price,
-        image: item.products.image_url,
-        quantity: item.quantity,
-        product_id: item.products.id,
-        stock: item.products.stock
+      if (error) return []
+      return data.map(item => ({
+        id: item.product_id,
+        name: item.products?.name,
+        price: item.products?.price,
+        image_url: item.products?.image_url,
+        quantity: item.quantity
       }))
-
-      renderCart(cart)
     }
 
-    // ✅ Render cart with stock check
-    function renderCart(cart) {
-      cartContainer.innerHTML = ""
-      let total = 0
-
-      cart.forEach((item, index) => {
-        total += item.price * item.quantity
-
-        const disablePlus = item.quantity >= item.stock ? "disabled" : ""
-
-        cartContainer.innerHTML += `
-          <div class="cart-item">
-            <img src="${item.image}" alt="${item.name}">
-            <div>
-              <h4>${item.name}</h4>
-              <p>₹${item.price} x ${item.quantity}</p>
-              <button onclick="updateQuantity(${index}, 1)" ${disablePlus}>+</button>
-              <button onclick="updateQuantity(${index}, -1)">-</button>
-              <button onclick="removeItem(${index})">Remove</button>
-              <p><small>Stock: ${item.stock}</small></p>
-            </div>
-          </div>
-        `
-      })
-
-      totalEl.textContent = "Total: ₹" + total
-      window._cart = cart
-    }
-
-    // ✅ Update Quantity
-    window.updateQuantity = async function (index, change) {
-      let cart = window._cart
-      let item = cart[index]
-      let newQty = item.quantity + change
-
-      if (newQty <= 0) {
-        await supabase.from("cart_items").delete().eq("id", item.id)
-      } else {
-        if (newQty > item.stock) {
-          alert(`⚠️ Only ${item.stock} available in stock!`)
-          return
-        }
-        await supabase.from("cart_items").update({ quantity: newQty }).eq("id", item.id)
+    async function renderCartSummary() {
+      const cart = await loadCartFromSupabase()
+      if (cart.length === 0) {
+        cartSummary.innerHTML = "<p>🛒 Your cart is empty!</p>"
+        proceedBtn.disabled = true
+        return []
       }
-      loadCart()
+
+      let total = 0
+      cartSummary.innerHTML = `
+        <h3>Order Summary</h3>
+        <div class="order-summary">
+          ${cart.map(item => {
+            total += item.price * item.quantity
+            return `
+              <div class="summary-item">
+                <img src="${item.image_url}" alt="${item.name}">
+                <p>${item.name} (x${item.quantity}) - ₹${item.price * item.quantity}</p>
+              </div>
+            `
+          }).join("")}
+      `
+
+      if (total < 500) {
+        shipping = 90
+        message.textContent = `🚚 Shipping ₹90 applied (Orders below ₹500)`
+      } else {
+        shipping = 0
+        message.textContent = `🚚 Free Shipping`
+      }
+
+      finalTotal = total + shipping
+
+      cartSummary.innerHTML += `
+          <p><strong>Subtotal: ₹${total}</strong></p>
+          <p><strong>Shipping: ₹${shipping}</strong></p>
+          <p class="grand-total"><strong>Final Total: ₹${finalTotal}</strong></p>
+        </div>
+      `
+
+      return { cart, finalTotal }
     }
 
-    // ✅ Remove Item
-    window.removeItem = async function (index) {
-      let cart = window._cart
-      let item = cart[index]
-      await supabase.from("cart_items").delete().eq("id", item.id)
-      loadCart()
-    }
+    let { cart } = await renderCartSummary()
 
-    // ✅ Checkout
-    document.getElementById("checkout-btn").addEventListener("click", () => {
-      window.location.href = "checkout.html"
+    proceedBtn.addEventListener("click", () => {
+      qrSection.style.display = "block"
+      proofSection.style.display = "block"
+      proceedBtn.style.display = "none"
+
+      const upiId = "9094900636@yescred"
+      const payUrl = `upi://pay?pa=${upiId}&pn=PrincessCollection&am=${finalTotal}&cu=INR`
+
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payUrl)}`
+      qrAmount.innerHTML = `Scan & Pay: <strong>₹${finalTotal}</strong>`
     })
 
-    // ✅ Logout
-    logoutBtn.addEventListener("click", async () => {
-      await supabase.auth.signOut()
-      window.location.href = "login.html"
-    })
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault()
 
-    // ✅ Hamburger toggle
-    const hamburger = document.getElementById("hamburger")
-    const navMenu = document.getElementById("navMenu")
-    hamburger.addEventListener("click", () => {
-      navMenu.classList.toggle("active")
-    })
+      const file = proofInput.files[0]
+      if (!file) return message.textContent = "⚠️ Please upload payment proof!"
 
-    // Initial Load
-    loadCart()
+      const filePath = `proofs/${user.id}_${Date.now()}_${file.name}`
+      let { error: uploadError } = await supabase.storage.from("payment_proofs").upload(filePath, file)
+      if (uploadError) return message.textContent = "❌ Failed to upload proof."
+
+      const { data: { publicUrl } } =
+        supabase.storage.from("payment_proofs").getPublicUrl(filePath)
+
+      const name = document.getElementById("name").value
+      const phone = document.getElementById("phone").value
+      const whatsapp = document.getElementById("whatsapp").value
+      const email = document.getElementById("email").value
+      const address = document.getElementById("address").value
+
+      let { error } = await supabase.from("orders").insert([{
+        user_id: user.id,
+        customer_name: name,
+        customer_phone: phone,
+        customer_whatsapp: whatsapp,
+        customer_email: email,
+        customer_address: address,
+        items: cart,
+        total: finalTotal,
+        shipping_charge: shipping,
+        status: "pending_verification",
+        payment_proof_url: publicUrl,
+        created_at: new Date().toISOString()
+      }])
+
+      if (error) return message.textContent = "⚠️ Order save failed!"
+
+      await supabase.from("cart_items").delete().eq("user_id", user.id)
+
+      form.reset()
+      qrSection.style.display = "none"
+      proofSection.style.display = "none"
+
+      message.innerHTML = `✅ Order Submitted!<br>We will verify your payment shortly.`
+    })
   </script>
+
 </body>
 </html>
