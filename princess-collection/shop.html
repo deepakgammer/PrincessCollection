@@ -3,120 +3,175 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Terms & Conditions - Princess Collection</title>
+  <title>Shop - Princess Collection</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    body {
-      font-family: 'Cormorant Garamond', serif;
-      margin: 20px;
-      line-height: 1.6;
-      background: #000; /* Black background */
-      color: #FFD700;   /* Gold text */
+    /* Navbar */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #000;
+      color: #FFD700;
+      position: relative;
+      z-index: 1000;
     }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 15px;
+    header .logo img {
+      height: 50px;
     }
-    h2 {
-      margin-top: 20px;
-      color: #ffcc33;
+    nav {
+      display: flex;
+      gap: 15px;
     }
-    a {
-      color: #42a5f5;
+    nav a {
+      color: #FFD700;
       text-decoration: none;
+      font-weight: bold;
     }
-    a:hover {
+    nav a:hover,
+    nav a.active {
       text-decoration: underline;
-      color: #fff176;
     }
-    .container {
-      max-width: 900px;
-      margin: auto;
-      padding: 20px;
+
+    /* Hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
     }
-    hr {
-      border: 0;
-      border-top: 1px solid #FFD700;
-      margin: 20px 0;
+    .hamburger span {
+      height: 3px;
+      width: 25px;
+      background: #FFD700;
+      margin: 4px 0;
+      border-radius: 2px;
     }
-    ul {
-      margin-left: 20px;
+
+    /* Responsive Dropdown */
+    @media (max-width: 768px) {
+      nav {
+        display: none;
+        flex-direction: column;
+        background: #111;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        width: 200px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+        padding: 10px;
+      }
+      nav a {
+        padding: 10px;
+        border-bottom: 1px solid #333;
+      }
+      nav a:last-child {
+        border-bottom: none;
+      }
+      .hamburger {
+        display: flex;
+      }
+      nav.active {
+        display: flex;
+      }
+    }
+
+    /* Filters styling */
+    .filters {
+      padding: 15px;
+      background: #111;
+      color: #FFD700;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+      justify-content: center;
+    }
+    .filters label {
+      margin-right: 5px;
+    }
+    .filters select {
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid #FFD700;
+      background: #000;
+      color: #FFD700;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>📜 Terms and Conditions</h1>
+  <!-- Navbar -->
+  <header>
+    <div class="logo">
+      <a href="index.html"><img src="assets/logo.png" alt="Princess Collection Logo"></a>
+    </div>
+    <div class="hamburger" id="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <nav id="navMenu">
+      <a href="index.html">Home</a>
+      <a href="shop.html" class="active">Shop</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+      <a href="cart.html">Cart 🛒</a>
+    </nav>
+  </header>
 
-    <p>Welcome to <strong>Princess Collection</strong>! These Terms and Conditions ("Terms") govern your access to and use of our website 
-    <a href="https://princesscollection.it.com">https://princesscollection.it.com</a> and our products or services (collectively, "Services"). 
-    By using our Services, you agree to be bound by these Terms. Please read them carefully.</p>
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>Our Products</h1>
+    <p>Browse categories and find your favorite collection ✨</p>
+    <input type="text" id="searchInput" placeholder="Search products...">
+  </section>
 
-    <hr>
+  <!-- Filters -->
+  <section class="filters">
+    <label for="categoryFilter">Category:</label>
+    <select id="categoryFilter">
+      <option value="">All</option>
+      <option value="Bangles">Bangles</option>
+      <option value="Earrings">Earrings</option>
+      <option value="Clips">Clips</option>
+      <option value="Bracelets">Bracelets</option>
+      <option value="ChainSets">ChainSets</option>
+      <option value="Combo">Combo</option>
+    </select>
 
-    <h2>1. Company Details</h2>
-    <p>
-      <strong>Legal Name:</strong> Princess Collection managed by JAYARATHNA K <br>
-      <strong>Address:</strong> Plot No. 118, Perumalpattu, S V Nagar, Thiruvallur, Tamil Nadu – 602024 <br>
-      <strong>Email:</strong> <a href="mailto:princesscollection7799@gmail.com">princesscollection7799@gmail.com</a> <br>
-      <strong>Mobile:</strong> +91 90949 00636 <br>
-      <strong>Website:</strong> <a href="https://princesscollection.it.com">https://princesscollection.it.com</a> <br>
-      <strong>Line of Business:</strong> Jewelry / Jewels
-    </p>
+    <label for="priceSort">Sort by Price:</label>
+    <select id="priceSort">
+      <option value="">Default</option>
+      <option value="asc">Low → High</option>
+      <option value="desc">High → Low</option>
+    </select>
+  </section>
 
-    <h2>2. Eligibility</h2>
-    <p>You must be at least 18 years old or the age of majority in your jurisdiction to use our services. 
-    By using our website or making a purchase, you confirm that you meet this requirement.</p>
+  <!-- Products -->
+  <section class="products">
+    <div id="product-list" class="grid">
+      <!-- Products will load here -->
+    </div>
+  </section>
 
-    <h2>3. Products and Services</h2>
-    <p>Princess Collection specializes in the sale of jewelry items, including but not limited to rings, necklaces, earrings, bangles, 
-    and custom-designed pieces. All products are subject to availability and may be withdrawn at any time.</p>
+  <!-- Footer -->
+  <footer>
+    <p>© 2025 Princess Collection. All Rights Reserved.</p>
+  </footer>
 
-    <h2>4. Pricing & Payment</h2>
-    <ul>
-      <li>All prices are listed in Indian Rupees (INR) and are inclusive of applicable taxes unless otherwise mentioned.</li>
-      <li>We accept multiple payment methods including credit/debit cards, UPI, net banking, and cash on delivery (where applicable).</li>
-      <li>Prices and availability are subject to change without prior notice.</li>
-    </ul>
+  <!-- Hamburger toggle -->
+  <script>
+    const hamburger = document.getElementById("hamburger")
+    const navMenu = document.getElementById("navMenu")
 
-    <h2>5. Shipping & Delivery</h2>
-    <p>Please refer to our <a href="shipping.html">Shipping Policy</a>.</p>
+    hamburger.addEventListener("click", () => {
+      navMenu.classList.toggle("active")
+    })
+  </script>
 
-    <h2>6. Returns & Refund</h2>
-    <p>Please refer to our <a href="refund.html">Return & Refund Policy</a>.</p>
-
-    <h2>7. Intellectual Property</h2>
-    <p>All content on this website, including text, images, logos, designs, and product descriptions, is the intellectual property 
-    of Princess Collection. Unauthorized use or reproduction is strictly prohibited.</p>
-
-    <h2>8. User Conduct</h2>
-    <p>You agree not to use our website for:</p>
-    <ul>
-      <li>Fraudulent or unlawful purposes</li>
-      <li>Posting misleading or offensive content</li>
-      <li>Disrupting the normal functioning of the website</li>
-    </ul>
-
-    <h2>9. Limitation of Liability</h2>
-    <p>Princess Collection is not liable for any indirect, incidental, or consequential damages arising out of the use or inability to use our products or website.</p>
-
-    <h2>10. Privacy Policy</h2>
-    <p>By using our services, you agree to our <a href="privacy.html">Privacy Policy</a>, which governs how we collect, use, and protect your personal data.</p>
-
-    <h2>11. Changes to Terms</h2>
-    <p>We reserve the right to modify these Terms at any time. Changes will be effective immediately upon posting on our website. 
-    Continued use of the site indicates your acceptance of the revised Terms.</p>
-
-    <h2>12. Governing Law</h2>
-    <p>These Terms shall be governed by and construed in accordance with the laws of India, with jurisdiction in the courts of Thiruvallur, Tamil Nadu.</p>
-
-    <h2>13. Contact Us</h2>
-    <p>
-      📍 Plot No. 118, Perumalpattu, S V Nagar, Thiruvallur – 602024 <br>
-      📧 <a href="mailto:princesscollection7799@gmail.com">princesscollection7799@gmail.com</a> <br>
-      📞 +91 90949 00636 <br>
-      🌐 <a href="https://princesscollection.it.com">https://princesscollection.it.com</a>
-    </p>
-  </div>
+  <!-- JS -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
+
