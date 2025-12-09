@@ -160,43 +160,62 @@
     </div>
   </footer>
 
-  <!-- Auth + Navbar Control -->
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+ <!-- Auth + Navbar Control -->
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co"
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA"
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  const SUPABASE_URL = "https://tffqsmbmtotluhjagwds.supabase.co";
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZnFzbWJtdG90bHVoamFnd2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3Njg5MTksImV4cCI6MjA3MzM0NDkxOX0.H8qY2F8XL8a7DKKhnQ_AAH1RxncbPHGnXdgd8LdQXnA";
 
-    const { data: { user } } = await supabase.auth.getUser()
+  // 👇 Global access for app.js and other pages
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.supabase = supabase;
 
-    const loginBtn = document.getElementById("loginBtn")
-    const profileBtn = document.getElementById("profileBtn")
-    const logoutBtn = document.getElementById("logoutBtn")
+  // 👇 Live user state check
+  const { data: { user } } = await supabase.auth.getUser();
 
-    if (user) {
-      loginBtn.style.display = "none"
-      profileBtn.style.display = "inline"
-      logoutBtn.style.display = "inline"
+  const loginBtn = document.getElementById("loginBtn");
+  const profileBtn = document.getElementById("profileBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  if (user) {
+    loginBtn.style.display = "none";
+    profileBtn.style.display = "inline";
+    logoutBtn.style.display = "inline";
+  } else {
+    loginBtn.style.display = "inline";
+    profileBtn.style.display = "none";
+    logoutBtn.style.display = "none";
+  }
+
+  // 👇 Realtime auth listener (fixes refresh/logout visual delay)
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) {
+      loginBtn.style.display = "none";
+      profileBtn.style.display = "inline";
+      logoutBtn.style.display = "inline";
     } else {
-      loginBtn.style.display = "inline"
-      profileBtn.style.display = "none"
-      logoutBtn.style.display = "none"
+      loginBtn.style.display = "inline";
+      profileBtn.style.display = "none";
+      logoutBtn.style.display = "none";
     }
+  });
 
-    logoutBtn?.addEventListener("click", async () => {
-      await supabase.auth.signOut()
-      window.location.href = "login.html"
-    })
+  logoutBtn?.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.href = "login.html";
+  });
 
-    // ✅ Hamburger toggle
-    const hamburger = document.getElementById("hamburger")
-    const navMenu = document.getElementById("navMenu")
+  // 👇 Hamburger toggle
+  const hamburger = document.getElementById("hamburger");
+  const navMenu = document.getElementById("navMenu");
 
-    hamburger.addEventListener("click", () => {
-      navMenu.classList.toggle("active")
-    })
-  </script>
+  hamburger.addEventListener("click", () => {
+    navMenu.classList.toggle("active");
+  });
+</script>
+
 
   <!-- Main app logic -->
   <script type="module" src="./app.js"></script>
